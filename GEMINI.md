@@ -1,15 +1,17 @@
 # Ascendume - Project Context
 
-## Overview
-Ascendume is a modern web application built with **Next.js 16 (App Router)** and **React 19**. It leverages **Tailwind CSS v4** for styling and **shadcn/ui** for high-quality accessible components. The project is designed to use **Neon Serverless Postgres** with **Drizzle ORM** for database management.
+## Project Overview
+Ascendume is a modern web application built with **Next.js 16 (App Router)** and **React 19**. It features a highly customized design system leveraging **Tailwind CSS v4** with OKLCH color palettes, custom shadows, and typography. The project is integrated with **Neon Serverless Postgres** using **Drizzle ORM** for database management and **shadcn/ui** for accessible components.
 
-## Tech Stack
+### Core Tech Stack
 - **Framework:** Next.js 16.2.1 (App Router)
-- **Styling:** Tailwind CSS v4, `tw-animate-css`, `motion` (Framer Motion)
-- **Components:** shadcn/ui (Radix UI based)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS v4 (using `@theme inline` and OKLCH color spaces)
+- **Components:** shadcn/ui (radix-nova style)
 - **Database:** Neon Serverless Postgres (`@neondatabase/serverless`)
 - **ORM:** Drizzle ORM (`drizzle-orm`, `drizzle-kit`)
-- **Fonts:** Geist Sans & Mono (Next.js font optimization)
+- **Animations:** Framer Motion (`motion`) and `tw-animate-css`
+- **Icons:** Lucide React
 
 ## Building and Running
 | Command | Action |
@@ -19,29 +21,32 @@ Ascendume is a modern web application built with **Next.js 16 (App Router)** and
 | `npm run start` | Starts the production server |
 | `npm run lint` | Runs ESLint for code quality checks |
 
+### Database Management
+- **Schema Location:** `lib/db/schema.ts`
+- **Generate Migrations:** `npx drizzle-kit generate`
+- **Apply Schema to DB:** `npx drizzle-kit push`
+- **Studio:** `npx drizzle-kit studio` (to view data)
+
 ## Project Structure
-- `app/`: Contains the application routes and layout (Next.js App Router).
-  - `layout.tsx`: Root layout with Geist font and global styles.
-  - `page.tsx`: Landing page.
-  - `globals.css`: Tailwind v4 configuration and shadcn/ui variables.
+- `app/`: Contains the application routes, layout, and global styles.
+  - `layout.tsx`: Root layout with Geist/custom font integration.
+  - `page.tsx`: Main landing page.
+  - `globals.css`: Tailwind v4 theme, OKLCH variables, and base styles.
 - `components/ui/`: shadcn/ui primitive components.
-- `lib/`: Utility functions and (planned) database initialization.
-  - `utils.ts`: Tailwind CSS class merging utility.
-- `.agents/skills/`: Custom agent skills (e.g., `neon-postgres` for database guidance).
+- `lib/`: Shared utilities and database logic.
+  - `db/index.ts`: Database connection initialization.
+  - `db/schema.ts`: Drizzle table definitions.
+  - `utils.ts`: Helper functions (e.g., `cn` for Tailwind class merging).
 
 ## Development Conventions
-- **Routing:** Use the App Router convention (`app/` directory).
-- **Styling:** Use Tailwind CSS utility classes. shadcn/ui components should be used for common UI patterns.
-- **Database:** 
-  - [TODO] Initialize Drizzle ORM (`drizzle.config.ts`).
-  - [TODO] Set up database schema in `lib/db/schema.ts` or similar.
-  - [TODO] Configure Neon connection in `lib/db/index.ts`.
-- **Naming:** Follow standard TypeScript and React naming conventions (PascalCase for components, camelCase for functions/variables).
-- **Icons:** Use `lucide-react` for iconography.
+- **Routing:** Follow Next.js App Router conventions (`app/` directory).
+- **Database Schema:** Define all tables in `lib/db/schema.ts` using Drizzle's `pg-core` functions.
+- **Styling:** Use Tailwind CSS v4 utility classes. Prefer CSS variables defined in `globals.css` for theme-specific values (colors, shadows, spacing).
+- **Typography:** The project uses a custom font setup with "Times New Roman" as the primary sans-serif/serif font and "JetBrains Mono" for monospaced text.
+- **Components:** Always use shadcn/ui primitives from `components/ui/` and compose them into complex components.
+- **Utils:** Use the `cn` utility from `lib/utils.ts` for conditional class name merging.
+- **Animations:** Leverage `motion` for complex transitions and `tw-animate-css` for utility-based animations.
 
-## External Documentation
-- [Next.js Docs](https://nextjs.org/docs)
-- [Tailwind CSS v4 Docs](https://tailwindcss.com/docs/v4-beta)
-- [shadcn/ui Docs](https://ui.shadcn.com)
-- [Neon Docs](https://neon.com/docs)
-- [Drizzle ORM Docs](https://orm.drizzle.team)
+## Environment Variables
+Ensure the following variables are set in your `.env` or `.env.local`:
+- `DATABASE_URL`: The full connection string for your Neon Postgres database.

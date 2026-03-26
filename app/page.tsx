@@ -1,236 +1,255 @@
-import { ArrowRight, Sparkles, FileText, Zap, CheckCircle } from "lucide-react";
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  ArrowRight,
+  Sparkles,
+  FileText,
+  Zap,
+  Loader2,
+  Menu,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Document, Page, pdfjs } from "react-pdf";
+import { ThemeToggle } from "@/components/theme-toggle";
+
+// Standard CSS for react-pdf
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+// Set up PDF worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+function PDFResumePreview() {
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [containerWidth, setContainerWidth] = useState<number>(300); // Conservative default
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        const padding = window.innerWidth < 640 ? 32 : 48;
+        const availableWidth = containerRef.current.clientWidth - padding;
+        setContainerWidth(Math.min(availableWidth, 600));
+      }
+    };
+
+    const timeoutId = setTimeout(updateWidth, 100);
+    window.addEventListener("resize", updateWidth);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, []);
+
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+    setIsLoading(false);
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full max-w-2xl mx-auto group px-0 sm:px-0"
+    >
+      <div className="absolute -inset-2 sm:-inset-10 from-primary/20 to-accent/20 blur-[40px] sm:blur-[100px] opacity-40 group-hover:opacity-70 transition-opacity duration-1000 pointer-events-none" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.01 }}
+        className="relative overflow-hidden shadow-2xl"
+      >
+        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center overflow-hidden">
+          <Document
+            file="/JohnDoe.pdf"
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div className="flex flex-col items-center gap-4 py-20">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <p className="text-[10px] sm:text-xs font-black text-muted-foreground animate-pulse tracking-widest uppercase">
+                  Optimizing Output...
+                </p>
+              </div>
+            }
+            error={
+              <div className="py-20 text-center px-6">
+                <FileText className="w-8 h-8 text-destructive mx-auto mb-4 opacity-20" />
+                <p className="text-destructive font-black text-[10px] uppercase">
+                  PDF Render Failed
+                </p>
+              </div>
+            }
+          >
+            <Page
+              pageNumber={1}
+              width={containerWidth}
+              className="max-w-full h-auto"
+              renderAnnotationLayer={false}
+              renderTextLayer={false}
+            />
+          </Document>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+const HeroButtons = ({ className }: { className?: string }) => (
+  <div className={className}>
+    <Button
+      size="lg"
+      className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full sm:w-auto"
+    >
+      Build My Resume
+      <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
+    </Button>
+    <Button
+      size="lg"
+      variant="outline"
+      className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black border-2 rounded-xl w-full sm:w-auto dark:border-zinc-800 dark:hover:bg-zinc-900"
+    >
+      View Gallery
+    </Button>
+  </div>
+);
+
+const Headline = ({ className }: { className?: string }) => (
+  <div className={className}>
+    <h1 className="text-7xl md:text-8xl lg:text-[100px]">
+      Get hired yesterday.
+    </h1>
+  </div>
+);
 
 export default function Home() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 overflow-x-hidden transition-colors duration-300">
       {/* Navigation */}
-      <nav className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <span className="font-bold text-xl">ascendume</span>
+      <nav className="border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-[100]">
+        <div className="max-w-7xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 group cursor-pointer shrink-0">
+            <span className="font-bold text-xl sm:text-2xl tracking-tighter">
+              ascendume
+            </span>
           </div>
-          <div className="flex items-center gap-6">
-            <a href="#features" className="text-sm text-text-secondary hover:text-primary transition-colors">Features</a>
-            <a href="#pricing" className="text-sm text-text-secondary hover:text-primary transition-colors">Pricing</a>
-            <button className="px-4 py-2 text-sm text-text-secondary hover:text-primary transition-colors">
+
+          <div className="hidden md:flex items-center gap-4">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" className="font-bold rounded-xl">
               Sign In
-            </button>
-            <button className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover transition-colors">
+            </Button>
+            <Button
+              size="sm"
+              className="font-bold shadow-lg shadow-primary/20 rounded-xl"
+            >
               Get Started
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <button
+              className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors focus:outline-none"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
+
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-border bg-background px-4 py-6 flex flex-col gap-4 overflow-hidden shadow-2xl"
+            >
+              <div className="flex flex-col gap-3 px-4">
+                <Button
+                  variant="outline"
+                  className="w-full font-black h-12 rounded-xl border-2 dark:border-zinc-800"
+                >
+                  Sign In
+                </Button>
+                <Button className="w-full font-black h-12 rounded-xl">
+                  Get Started
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}
-      <section className="py-24 px-8 bg-gradient-to-b from-background to-background-secondary">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-light text-primary rounded-full text-sm mb-6">
-            <Sparkles className="w-4 h-4" />
-            AI-Powered Resume Builder
-          </div>
-          
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-            Build Your Perfect Resume in{" "}
-            <span className="text-primary">Minutes</span>
-          </h1>
-          
-          <p className="text-xl text-text-secondary mb-10 max-w-2xl mx-auto">
-            Ascendume uses advanced AI to craft professional, ATS-optimized resumes that get you noticed by recruiters and land more interviews.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-primary text-primary-foreground rounded-lg text-lg font-semibold hover:bg-primary-hover transition-colors shadow-lg shadow-primary/25 flex items-center justify-center gap-2">
-              Build My Resume
-              <ArrowRight className="w-5 h-5" />
-            </button>
-            <button className="px-8 py-4 bg-background-secondary text-text-primary rounded-lg text-lg font-semibold border border-border hover:bg-background-tertiary transition-colors flex items-center justify-center gap-2">
-              View Examples
-            </button>
-          </div>
-          
-          <p className="text-sm text-text-muted mt-6">
-            No credit card required · Free plan available
-          </p>
+      <section className="relative pt-12 pb-20 sm:pt-24 sm:pb-32 px-4 sm:px-6 overflow-hidden min-h-[calc(100vh-80px)] flex items-center">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 pointer-events-none opacity-20 dark:opacity-10">
+          <div className="absolute top-20 left-1/4 w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] bg-primary/20 blur-[60px] sm:blur-[120px] rounded-full animate-pulse" />
+          <div className="absolute bottom-20 right-1/4 w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] bg-accent/20 blur-[60px] sm:blur-[120px] rounded-full animate-pulse delay-1000" />
         </div>
-      </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-8 bg-background">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose Ascendume?</h2>
-            <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-              Our AI-powered platform helps you create resumes that stand out from the competition.
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 sm:gap-20 items-center w-full">
+          {/* Mobile Headline - Shows at the top on mobile, hidden on desktop */}
+          <Headline className="lg:hidden text-center" />
+
+          {/* Text Content Block */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center lg:text-left order-2 lg:order-1"
+          >
+            {/* Desktop Headline - Hidden on mobile */}
+            <Headline className="hidden lg:block" />
+
+            <p className="text-base sm:text-xl text-muted-foreground mb-8 sm:mb-12 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+              Ascendume transforms your career history into a high-impact,
+              ATS-crushing resume. See the{" "}
+              <span className="text-foreground font-bold italic">
+                exact PDF
+              </span>{" "}
+              that got John hired.
             </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="p-8 rounded-xl border border-border bg-card hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-primary-light rounded-lg flex items-center justify-center mb-6">
-                <Sparkles className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">AI-Powered Writing</h3>
-              <p className="text-text-secondary">
-                Our AI analyzes your experience and crafts compelling bullet points that highlight your achievements.
-              </p>
-            </div>
-            
-            {/* Feature 2 */}
-            <div className="p-8 rounded-xl border border-border bg-card hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-primary-light rounded-lg flex items-center justify-center mb-6">
-                <FileText className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">ATS Optimization</h3>
-              <p className="text-text-secondary">
-                Every resume is optimized for Applicant Tracking Systems, ensuring your application gets seen by humans.
-              </p>
-            </div>
-            
-            {/* Feature 3 */}
-            <div className="p-8 rounded-xl border border-border bg-card hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-primary-light rounded-lg flex items-center justify-center mb-6">
-                <Zap className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Instant Templates</h3>
-              <p className="text-text-secondary">
-                Choose from professionally designed templates that are proven to catch recruiters attention.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* How It Works */}
-      <section className="py-24 px-8 bg-background-secondary">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">How It Works</h2>
-            <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-              Create your professional resume in three simple steps.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                1
-              </div>
-              <h3 className="text-xl font-bold mb-3">Input Your Info</h3>
-              <p className="text-text-secondary">
-                Enter your work history, education, and skills. Our AI will handle the rest.
-              </p>
-            </div>
-            
-            {/* Step 2 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                2
-              </div>
-              <h3 className="text-xl font-bold mb-3">AI Enhancement</h3>
-              <p className="text-text-secondary">
-                Our AI rewrites your bullet points to highlight achievements and use action verbs.
-              </p>
-            </div>
-            
-            {/* Step 3 */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                3
-              </div>
-              <h3 className="text-xl font-bold mb-3">Download & Apply</h3>
-              <p className="text-text-secondary">
-                Export your resume as PDF and start applying to your dream jobs.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+            <HeroButtons className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start" />
+          </motion.div>
 
-      {/* Testimonials */}
-      <section className="py-24 px-8 bg-background">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Trusted by Job Seekers</h2>
-            <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-              See what our users are saying about Ascendume.
-            </p>
+          {/* PDF Preview Block */}
+          <div className="relative order-1 lg:order-2 w-full max-w-full overflow-hidden sm:overflow-visible">
+            <PDFResumePreview />
           </div>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Testimonial 1 */}
-            <div className="p-8 rounded-xl border border-border bg-card">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <CheckCircle key={i} className="w-5 h-5 text-success fill-success/20" />
-                ))}
-              </div>
-              <p className="text-lg mb-6 italic">
-                "I landed 3 interviews in my first week using Ascendume. The AI suggestions made my experience sound way more impressive."
-              </p>
-              <div>
-                <p className="font-bold">Sarah Chen</p>
-                <p className="text-text-secondary text-sm">Software Engineer at Tech Corp</p>
-              </div>
-            </div>
-            
-            {/* Testimonial 2 */}
-            <div className="p-8 rounded-xl border border-border bg-card">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <CheckCircle key={i} className="w-5 h-5 text-success fill-success/20" />
-                ))}
-              </div>
-              <p className="text-lg mb-6 italic">
-                "The ATS optimization actually works. I was getting no responses before, now I'm getting calls every week."
-              </p>
-              <div>
-                <p className="font-bold">Marcus Johnson</p>
-                <p className="text-text-secondary text-sm">Product Manager at StartupXYZ</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 px-8 bg-primary">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6 text-primary-foreground">
-            Ready to Land Your Dream Job?
-          </h2>
-          <p className="text-xl mb-10 text-primary-foreground/90 max-w-2xl mx-auto">
-            Join thousands of job seekers who have transformed their careers with Ascendume.
-          </p>
-          <button className="px-8 py-4 bg-background text-text-primary rounded-lg text-lg font-semibold hover:bg-background-secondary transition-colors shadow-lg flex items-center justify-center gap-2 mx-auto">
-            Start Building for Free
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <p className="text-sm mt-6 text-primary-foreground/75">
-            Free plan includes 1 resume · No credit card required
-          </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-8 bg-background-secondary border-t border-border">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="font-bold">ascendume</span>
-            </div>
-            <div className="flex gap-8 text-sm text-text-secondary">
-              <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="#" className="hover:text-primary transition-colors">Terms</a>
-              <a href="#" className="hover:text-primary transition-colors">Contact</a>
-            </div>
-            <p className="text-sm text-text-muted">
-              © 2026 Ascendume. All rights reserved.
-            </p>
+      <footer className="py-12 sm:py-20 px-4 border-t border-border bg-background transition-colors duration-300">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="font-bold text-xl tracking-tighter">
+              ascendume
+            </span>
+          </div>
+          <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest text-center">
+            © 2026 Ascendume. Elevating careers with AI.
+          </p>
+          <div className="flex gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
+            <a href="#" className="hover:text-primary transition-colors">
+              Privacy
+            </a>
+            <a href="#" className="hover:text-primary transition-colors">
+              Twitter
+            </a>
+            <a href="#" className="hover:text-primary transition-colors">
+              LinkedIn
+            </a>
           </div>
         </div>
       </footer>
