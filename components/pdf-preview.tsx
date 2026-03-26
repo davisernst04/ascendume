@@ -23,11 +23,7 @@ export function PDFResumePreview() {
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
-        // More conservative padding to prevent overflow
-        const padding = 64; // Always use consistent padding
-        const availableWidth = containerRef.current.clientWidth - padding;
-        // Cap at 500px to ensure text doesn't run off page
-        setContainerWidth(Math.min(availableWidth, 500));
+        setContainerWidth(containerRef.current.clientWidth);
       }
     };
 
@@ -55,21 +51,21 @@ export function PDFResumePreview() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full max-w-3xl mx-auto group px-4 sm:px-8 lg:px-0"
+      className="relative w-full group"
     >
       <div className="absolute -inset-2 sm:-inset-10 from-primary/20 to-accent/20 blur-[40px] sm:blur-[100px] opacity-40 group-hover:opacity-70 transition-opacity duration-1000 pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.01 }}
-        className="relative overflow-hidden shadow-2xl bg-background"
+        className="relative border-none shadow-none bg-transparent"
       >
-        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center lg:justify-end overflow-hidden border-none shadow-none bg-transparent">
           <Document
             file="/JohnDoe.pdf"
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
+            className="border-none shadow-none outline-none lg:mr-0"
             loading={
               <div className="flex flex-col items-center gap-4 py-20">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />

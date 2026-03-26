@@ -173,14 +173,16 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--border, currentColor);
+    outline-color: var(--ring, currentColor);
   }
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
-  /* Remove ALL borders from react-pdf elements */
+  /* Forcefully remove ALL borders and shadows from PDF elements */
+  .react-pdf__Document,
   .react-pdf__Page,
   .react-pdf__Page__canvas,
   .react-pdf__Page__textContent,
@@ -189,23 +191,22 @@
   .pdf-page-wrapper,
   .pdf-page-wrapper > div,
   .pdf-page-wrapper canvas,
+  .react-pdf__Document > div,
+  .react-pdf__Page > div,
   canvas {
     border: none !important;
-    border-top: none !important;
-    border-bottom: none !important;
-    border-left: none !important;
-    border-right: none !important;
+    border-width: 0 !important;
     box-shadow: none !important;
     outline: none !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: transparent !important;
   }
-  /* Target all divs inside react-pdf containers */
-  [class*="react-pdf"] > div,
-  [class*="react-pdf"] canvas,
-  .pdf-page-wrapper > *,
-  .react-pdf__Page--no-border > * {
+  /* Target any nested divs that might have inherited borders */
+  [class*="react-pdf"] *,
+  .pdf-page-wrapper * {
     border: none !important;
+    border-width: 0 !important;
     box-shadow: none !important;
     outline: none !important;
   }
