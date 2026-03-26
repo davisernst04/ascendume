@@ -39,7 +39,7 @@ export default function SignUpPage() {
       });
 
       if (result.error) {
-        setError(result.error.message);
+        setError(result.error.message ?? "An error occurred during sign up");
       } else {
         router.push("/");
         router.refresh();

@@ -30,7 +30,7 @@ export default function SignInPage() {
       });
 
       if (result.error) {
-        setError(result.error.message);
+        setError(result.error.message ?? "An error occurred during sign in");
       } else {
         router.push("/");
         router.refresh();
