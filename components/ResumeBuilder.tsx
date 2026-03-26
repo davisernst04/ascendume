@@ -23,6 +23,7 @@ import { ResumeProvider, useResume } from "@/lib/resume-context";
 import { ResumePreview } from "./ResumePreview";
 import { ThemeToggle } from "./theme-toggle";
 import { usePdfExport } from "@/lib/use-pdf-export";
+import { AIEnhanceButton } from "./ai-enhance-button";
 
 type SectionType = "personal" | "experience" | "education" | "skills" | "projects" | "certifications";
 
@@ -323,6 +324,11 @@ function PersonalInfoEditor() {
           value={personalInfo.summary}
           onChange={(e) => updatePersonalInfo({ summary: e.target.value })}
         />
+        <AIEnhanceButton
+          text={personalInfo.summary}
+          type="summary"
+          onEnhanced={(text) => updatePersonalInfo({ summary: text })}
+        />
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div>
@@ -445,10 +451,12 @@ function ExperienceEditor() {
               value={exp.bullets}
               onChange={(e) => updateExperience(exp.id, { bullets: e.target.value })}
             />
+            <AIEnhanceButton
+              text={exp.bullets}
+              type="bullets"
+              onEnhanced={(text) => updateExperience(exp.id, { bullets: text })}
+            />
           </div>
-          <button className="mt-3 text-sm text-primary hover:underline flex items-center gap-1">
-            <Plus className="w-4 h-4" /> Enhance with AI
-          </button>
         </div>
       ))}
       <button 
@@ -647,6 +655,11 @@ function ProjectsEditor() {
               placeholder="Brief description of the project..."
               value={proj.description}
               onChange={(e) => updateProject(proj.id, { description: e.target.value })}
+            />
+            <AIEnhanceButton
+              text={proj.description}
+              type="description"
+              onEnhanced={(text) => updateProject(proj.id, { description: text })}
             />
           </div>
         </div>
