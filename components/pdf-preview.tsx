@@ -23,9 +23,11 @@ export function PDFResumePreview() {
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
-        const padding = window.innerWidth < 640 ? 32 : 48;
+        // More conservative padding to prevent overflow
+        const padding = 64; // Always use consistent padding
         const availableWidth = containerRef.current.clientWidth - padding;
-        setContainerWidth(Math.min(availableWidth, 600));
+        // Cap at 500px to ensure text doesn't run off page
+        setContainerWidth(Math.min(availableWidth, 500));
       }
     };
 
@@ -63,7 +65,7 @@ export function PDFResumePreview() {
         whileHover={{ scale: 1.01 }}
         className="relative overflow-hidden shadow-2xl bg-background"
       >
-        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center p-4 sm:p-8">
+        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
           <Document
             file="/JohnDoe.pdf"
             onLoadSuccess={onDocumentLoadSuccess}
@@ -87,14 +89,16 @@ export function PDFResumePreview() {
             }
           >
             {numPages && (
-              <div className="border-0 shadow-none outline-none overflow-hidden [&>canvas]:border-0 [&>canvas]:shadow-none [&>canvas]:outline-none">
-                <Page
-                  pageNumber={1}
-                  width={containerWidth}
-                  className="border-0 shadow-none outline-none"
-                  renderAnnotationLayer={false}
-                  renderTextLayer={false}
-                />
+              <div className="relative border-0 shadow-none outline-none overflow-hidden max-w-full">
+                <div className="pdf-page-wrapper border-0 shadow-none outline-none overflow-hidden">
+                  <Page
+                    pageNumber={1}
+                    width={containerWidth}
+                    className="border-0 shadow-none outline-none"
+                    renderAnnotationLayer={false}
+                    renderTextLayer={false}
+                  />
+                </div>
               </div>
             )}
           </Document>
