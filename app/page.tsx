@@ -1,136 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  ArrowRight,
-  Sparkles,
-  FileText,
-  Zap,
-  Loader2,
-  Menu,
-  X,
-} from "lucide-react";
+import { ArrowRight, Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-
-// Dynamically import react-pdf components to avoid SSR issues
 import dynamic from "next/dynamic";
 
-const Document = dynamic(
-  () => import("react-pdf").then((mod) => mod.Document),
+// Dynamically import PDF component with no SSR
+const PDFResumePreview = dynamic(
+  () => import("@/components/pdf-preview").then((mod) => mod.PDFResumePreview),
   { ssr: false }
 );
-
-const Page = dynamic(
-  () => import("react-pdf").then((mod) => mod.Page),
-  { ssr: false }
-);
-
-// Import pdfjs for worker setup
-import { pdfjs } from "react-pdf";
-
-// Standard CSS for react-pdf
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-
-// Set up PDF worker
-if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-}
-
-function PDFResumePreview() {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [containerWidth, setContainerWidth] = useState<number>(300);
-  const [isClient, setIsClient] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setIsClient(true);
-    
-    const updateWidth = () => {
-      if (containerRef.current) {
-        const padding = window.innerWidth < 640 ? 32 : 48;
-        const availableWidth = containerRef.current.clientWidth - padding;
-        setContainerWidth(Math.min(availableWidth, 600));
-      }
-    };
-
-    const timeoutId = setTimeout(updateWidth, 100);
-    window.addEventListener("resize", updateWidth);
-
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener("resize", updateWidth);
-    };
-  }, []);
-
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-    setIsLoading(false);
-  }
-
-  if (!isClient) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-20">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-[10px] sm:text-xs font-black text-muted-foreground animate-pulse tracking-widest uppercase">
-          Loading Preview...
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative w-full max-w-3xl mx-auto group px-4 sm:px-8 lg:px-0"
-    >
-      <div className="absolute -inset-2 sm:-inset-10 from-primary/20 to-accent/20 blur-[40px] sm:blur-[100px] opacity-40 group-hover:opacity-70 transition-opacity duration-1000 pointer-events-none" />
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.01 }}
-        className="relative overflow-hidden shadow-2xl bg-background"
-      >
-        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center p-4 sm:p-8">
-          <Document
-            file="/JohnDoe.pdf"
-            onLoadSuccess={onDocumentLoadSuccess}
-            loading={
-              <div className="flex flex-col items-center gap-4 py-20">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                <p className="text-[10px] sm:text-xs font-black text-muted-foreground animate-pulse tracking-widest uppercase">
-                  Optimizing Output...
-                </p>
-              </div>
-            }
-            error={
-              <div className="py-20 text-center px-6">
-                <FileText className="w-8 h-8 text-destructive mx-auto mb-4 opacity-20" />
-                <p className="text-destructive font-black text-[10px] uppercase">
-                  PDF Render Failed
-                </p>
-              </div>
-            }
-          >
-            <div className="border-0 shadow-none outline-none">
-              <Page
-                pageNumber={1}
-                width={containerWidth}
-                className="max-w-full h-auto border-0 shadow-none"
-                renderAnnotationLayer={false}
-                renderTextLayer={false}
-              />
-            </div>
-          </Document>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
 
 const HeroButtons = ({ className }: { className?: string }) => (
   <div className={className}>
