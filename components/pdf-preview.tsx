@@ -97,6 +97,7 @@ export function PDFResumePreview() {
                     className="border-0 shadow-none outline-none"
                     renderAnnotationLayer={false}
                     renderTextLayer={false}
+                    canvasBackground="transparent"
                   />
                 </div>
               </div>

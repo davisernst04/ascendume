@@ -203,4 +203,15 @@
     box-shadow: none !important;
     outline: none !important;
   }
+  /* Aggressive left/right border removal */
+  [class*="react-pdf"] {
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+  }
+  [class*="react-pdf"] canvas {
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+  }
 }
