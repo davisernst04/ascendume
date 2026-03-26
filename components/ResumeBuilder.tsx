@@ -16,11 +16,13 @@ import {
   ChevronUp,
   ArrowLeft,
   Download,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResumeProvider, useResume } from "@/lib/resume-context";
 import { ResumePreview } from "./ResumePreview";
 import { ThemeToggle } from "./theme-toggle";
+import { usePdfExport } from "@/lib/use-pdf-export";
 
 type SectionType = "personal" | "experience" | "education" | "skills" | "projects" | "certifications";
 
@@ -51,6 +53,7 @@ const defaultSections: Section[] = [
 
 function ResumeBuilderContent() {
   const { resumeData, updateTitle } = useResume();
+  const { exportPdf, isExporting } = usePdfExport();
   const [sections, setSections] = useState<Section[]>(defaultSections);
   const [activeSection, setActiveSection] = useState<string>("1");
 
@@ -112,9 +115,23 @@ function ResumeBuilderContent() {
             <Button variant="outline" size="sm" className="font-bold rounded-lg">
               Preview
             </Button>
-            <Button size="sm" className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2">
-              <Download className="w-4 h-4" />
-              Export PDF
+            <Button 
+              size="sm" 
+              className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2"
+              onClick={() => exportPdf(resumeData)}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Export PDF
+                </>
+              )}
             </Button>
           </div>
         </div>
