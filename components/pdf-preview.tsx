@@ -89,7 +89,7 @@ export function PDFResumePreview() {
             }
           >
             {numPages && (
-              <div className="relative border-0 shadow-none outline-none overflow-hidden max-w-full">
+              <div className="react-pdf__Page--no-border border-0 shadow-none outline-none overflow-hidden max-w-full">
                 <div className="pdf-page-wrapper border-0 shadow-none outline-none overflow-hidden">
                   <Page
                     pageNumber={1}
@@ -97,7 +97,6 @@ export function PDFResumePreview() {
                     className="border-0 shadow-none outline-none"
                     renderAnnotationLayer={false}
                     renderTextLayer={false}
-                    canvasBackground="transparent"
                   />
                 </div>
               </div>

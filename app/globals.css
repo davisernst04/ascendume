@@ -180,38 +180,33 @@
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
-  /* Remove borders from react-pdf canvas elements */
-  canvas {
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-  }
-  /* Target react-pdf specific elements */
+  /* Remove ALL borders from react-pdf elements */
   .react-pdf__Page,
   .react-pdf__Page__canvas,
   .react-pdf__Page__textContent,
-  .react-pdf__Page__annotations {
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-  }
-  /* PDF page wrapper */
+  .react-pdf__Page__annotations,
+  .react-pdf__Page--no-border,
   .pdf-page-wrapper,
   .pdf-page-wrapper > div,
-  .pdf-page-wrapper canvas {
+  .pdf-page-wrapper canvas,
+  canvas {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  /* Target all divs inside react-pdf containers */
+  [class*="react-pdf"] > div,
+  [class*="react-pdf"] canvas,
+  .pdf-page-wrapper > *,
+  .react-pdf__Page--no-border > * {
     border: none !important;
     box-shadow: none !important;
     outline: none !important;
-  }
-  /* Aggressive left/right border removal */
-  [class*="react-pdf"] {
-    border-left: none !important;
-    border-right: none !important;
-    box-shadow: none !important;
-  }
-  [class*="react-pdf"] canvas {
-    border-left: none !important;
-    border-right: none !important;
-    box-shadow: none !important;
   }
 }
