@@ -15,13 +15,15 @@ const PDFResumePreview = dynamic(
 
 const HeroButtons = ({ className }: { className?: string }) => (
   <div className={className}>
-    <Button
-      size="lg"
-      className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full sm:w-auto"
-    >
-      Build My Resume
-      <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
-    </Button>
+    <a href="/builder">
+      <Button
+        size="lg"
+        className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full sm:w-auto"
+      >
+        Build My Resume
+        <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
+      </Button>
+    </a>
     <Button
       size="lg"
       variant="outline"
@@ -59,12 +61,14 @@ export default function Home() {
             <Button variant="ghost" size="sm" className="font-bold rounded-xl">
               Sign In
             </Button>
-            <Button
-              size="sm"
-              className="font-bold shadow-lg shadow-primary/20 rounded-xl"
-            >
-              Get Started
-            </Button>
+            <a href="/builder">
+              <Button
+                size="sm"
+                className="font-bold shadow-lg shadow-primary/20 rounded-xl"
+              >
+                Get Started
+              </Button>
+            </a>
           </div>
 
           <div className="flex items-center gap-2 md:hidden">
@@ -93,9 +97,11 @@ export default function Home() {
                 >
                   Sign In
                 </Button>
-                <Button className="w-full font-black h-12 rounded-xl">
-                  Get Started
-                </Button>
+                <a href="/builder">
+                  <Button className="w-full font-black h-12 rounded-xl">
+                    Get Started
+                  </Button>
+                </a>
               </div>
             </motion.div>
           )}
