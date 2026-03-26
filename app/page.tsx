@@ -12,23 +12,43 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Document, Page, pdfjs } from "react-pdf";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+// Dynamically import react-pdf components to avoid SSR issues
+import dynamic from "next/dynamic";
+
+const Document = dynamic(
+  () => import("react-pdf").then((mod) => mod.Document),
+  { ssr: false }
+);
+
+const Page = dynamic(
+  () => import("react-pdf").then((mod) => mod.Page),
+  { ssr: false }
+);
+
+// Import pdfjs for worker setup
+import { pdfjs } from "react-pdf";
 
 // Standard CSS for react-pdf
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
 // Set up PDF worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+if (typeof window !== "undefined") {
+  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 
 function PDFResumePreview() {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [containerWidth, setContainerWidth] = useState<number>(300); // Conservative default
+  const [containerWidth, setContainerWidth] = useState<number>(300);
+  const [isClient, setIsClient] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setIsClient(true);
+    
     const updateWidth = () => {
       if (containerRef.current) {
         const padding = window.innerWidth < 640 ? 32 : 48;
@@ -51,10 +71,21 @@ function PDFResumePreview() {
     setIsLoading(false);
   }
 
+  if (!isClient) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-20">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-[10px] sm:text-xs font-black text-muted-foreground animate-pulse tracking-widest uppercase">
+          Loading Preview...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full max-w-2xl mx-auto group px-0 sm:px-0"
+      className="relative w-full max-w-3xl mx-auto group px-4 sm:px-8 lg:px-0"
     >
       <div className="absolute -inset-2 sm:-inset-10 from-primary/20 to-accent/20 blur-[40px] sm:blur-[100px] opacity-40 group-hover:opacity-70 transition-opacity duration-1000 pointer-events-none" />
 
@@ -62,9 +93,9 @@ function PDFResumePreview() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
-        className="relative overflow-hidden shadow-2xl"
+        className="relative overflow-hidden shadow-2xl bg-background"
       >
-        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center overflow-hidden">
+        <div className="min-h-[350px] sm:min-h-[600px] flex items-center justify-center p-4 sm:p-8">
           <Document
             file="/JohnDoe.pdf"
             onLoadSuccess={onDocumentLoadSuccess}
@@ -85,13 +116,15 @@ function PDFResumePreview() {
               </div>
             }
           >
-            <Page
-              pageNumber={1}
-              width={containerWidth}
-              className="max-w-full h-auto"
-              renderAnnotationLayer={false}
-              renderTextLayer={false}
-            />
+            <div className="border-0 shadow-none outline-none">
+              <Page
+                pageNumber={1}
+                width={containerWidth}
+                className="max-w-full h-auto border-0 shadow-none"
+                renderAnnotationLayer={false}
+                renderTextLayer={false}
+              />
+            </div>
           </Document>
         </div>
       </motion.div>
@@ -133,7 +166,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 overflow-x-hidden transition-colors duration-300">
       {/* Navigation */}
       <nav className="border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-[100]">
-        <div className="max-w-7xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 group cursor-pointer shrink-0">
             <span className="font-bold text-xl sm:text-2xl tracking-tighter">
               ascendume
@@ -189,7 +222,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-12 pb-20 sm:pt-24 sm:pb-32 px-4 sm:px-6 overflow-hidden min-h-[calc(100vh-80px)] flex items-center">
+      <section className="relative pt-12 pb-20 sm:pt-24 sm:pb-32 px-6 sm:px-8 lg:px-12 overflow-hidden min-h-[calc(100vh-80px)] flex items-center">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 pointer-events-none opacity-20 dark:opacity-10">
           <div className="absolute top-20 left-1/4 w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] bg-primary/20 blur-[60px] sm:blur-[120px] rounded-full animate-pulse" />
           <div className="absolute bottom-20 right-1/4 w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] bg-accent/20 blur-[60px] sm:blur-[120px] rounded-full animate-pulse delay-1000" />
@@ -229,7 +262,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 sm:py-20 px-4 border-t border-border bg-background transition-colors duration-300">
+      <footer className="py-12 sm:py-20 px-6 sm:px-8 lg:px-12 border-t border-border bg-background transition-colors duration-300">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />

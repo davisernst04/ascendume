@@ -180,4 +180,9 @@
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
+  /* Remove borders from react-pdf canvas elements */
+  canvas {
+    border: none !important;
+    box-shadow: none !important;
+  }
 }
