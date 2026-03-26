@@ -87,11 +87,11 @@ export function PDFResumePreview() {
             }
           >
             {numPages && (
-              <div className="border-0 shadow-none outline-none">
+              <div className="border-0 shadow-none outline-none overflow-hidden [&>canvas]:border-0 [&>canvas]:shadow-none [&>canvas]:outline-none">
                 <Page
                   pageNumber={1}
                   width={containerWidth}
-                  className="border-0 shadow-none"
+                  className="border-0 shadow-none outline-none"
                   renderAnnotationLayer={false}
                   renderTextLayer={false}
                 />

@@ -184,5 +184,16 @@
   canvas {
     border: none !important;
     box-shadow: none !important;
+    outline: none !important;
+  }
+  /* Target react-pdf specific elements */
+  .react-pdf__Page {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .react-pdf__Page__canvas {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
   }
 }
