@@ -24,6 +24,7 @@ import { ResumePreview } from "./ResumePreview";
 import { ThemeToggle } from "./theme-toggle";
 import { usePdfExport } from "@/lib/use-pdf-export";
 import { AIEnhanceButton } from "./ai-enhance-button";
+import { useResumePersistence } from "@/lib/use-resume-persistence";
 
 type SectionType = "personal" | "experience" | "education" | "skills" | "projects" | "certifications";
 
@@ -55,6 +56,7 @@ const defaultSections: Section[] = [
 function ResumeBuilderContent() {
   const { resumeData, updateTitle } = useResume();
   const { exportPdf, isExporting } = usePdfExport();
+  useResumePersistence(); // Auto-save to database or localStorage
   const [sections, setSections] = useState<Section[]>(defaultSections);
   const [activeSection, setActiveSection] = useState<string>("1");
 

@@ -89,6 +89,7 @@ const defaultResumeData: ResumeData = {
 
 interface ResumeContextType {
   resumeData: ResumeData;
+  setResumeData: (data: ResumeData) => void;
   updateTitle: (title: string) => void;
   updatePersonalInfo: (info: Partial<PersonalInfo>) => void;
   addExperience: (exp?: Partial<Experience>) => void;
@@ -256,6 +257,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
     <ResumeContext.Provider
       value={{
         resumeData,
+        setResumeData,
         updateTitle,
         updatePersonalInfo,
         addExperience,
