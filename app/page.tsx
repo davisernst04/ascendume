@@ -1,10 +1,13 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useState } from "react";
+import { AnimatePresence } from "motion/react";
 
 // Dynamically import PDF component with no SSR
 const PDFResumePreview = dynamic(
@@ -14,12 +17,21 @@ const PDFResumePreview = dynamic(
 
 const HeroButtons = ({ className }: { className?: string }) => (
   <div className={className}>
+    <Link href="/builder">
+      <Button
+        size="lg"
+        className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full sm:w-auto"
+      >
+        Build My Resume
+        <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
+      </Button>
+    </Link>
     <Button
       size="lg"
-      className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full sm:w-auto"
+      variant="outline"
+      className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black border-2 rounded-xl w-full sm:w-auto dark:border-zinc-800 dark:hover:bg-zinc-900"
     >
-      Build My Resume
-      <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
+      View Gallery
     </Button>
   </div>
 );
@@ -33,6 +45,8 @@ const Headline = ({ className }: { className?: string }) => (
 );
 
 export default function Home() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 transition-colors duration-300">
       {/* Navigation */}
@@ -44,10 +58,60 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4">
             <ThemeToggle />
+            <Link href="/auth/sign-in">
+              <Button variant="ghost" size="sm" className="font-bold rounded-xl">
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/builder">
+              <Button
+                size="sm"
+                className="font-bold shadow-lg shadow-primary/20 rounded-xl"
+              >
+                Get Started
+              </Button>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <button
+              className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors focus:outline-none"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-border bg-background px-4 py-6 flex flex-col gap-4 overflow-hidden shadow-2xl"
+            >
+              <div className="flex flex-col gap-3 px-4">
+                <Link href="/auth/sign-in">
+                  <Button
+                    variant="outline"
+                    className="w-full font-black h-12 rounded-xl border-2 dark:border-zinc-800"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/builder">
+                  <Button className="w-full font-black h-12 rounded-xl">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       <div className="overflow-x-hidden">
