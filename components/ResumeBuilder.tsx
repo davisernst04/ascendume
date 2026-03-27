@@ -77,7 +77,7 @@ function ResumeBuilderContent() {
     }
     
     const newSection: Section = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       type,
       title: type === "experience" ? "Work Experience" :
              type === "education" ? "Education" :

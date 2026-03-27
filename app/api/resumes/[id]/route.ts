@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { resumes, personalInfo, workExperience, education, skills, projects, certifications } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { Experience, Education, Project, Certification } from "@/lib/resume-context";
 
 // GET /api/resumes/[id] - Get a specific resume
 export async function GET(
@@ -96,7 +97,7 @@ export async function PUT(
       await db.delete(workExperience).where(eq(workExperience.resumeId, id));
       if (workExperienceData?.length) {
         await db.insert(workExperience).values(
-          workExperienceData.map((exp: any, index: number) => ({
+          workExperienceData.map((exp: Experience, index: number) => ({
             resumeId: id,
             company: exp.company,
             position: exp.position,
@@ -115,7 +116,7 @@ export async function PUT(
       await db.delete(education).where(eq(education.resumeId, id));
       if (educationData?.length) {
         await db.insert(education).values(
-          educationData.map((edu: any, index: number) => ({
+          educationData.map((edu: Education, index: number) => ({
             resumeId: id,
             institution: edu.institution,
             degree: edu.degree,
@@ -151,7 +152,7 @@ export async function PUT(
       await db.delete(projects).where(eq(projects.resumeId, id));
       if (projectsData?.length) {
         await db.insert(projects).values(
-          projectsData.map((proj: any, index: number) => ({
+          projectsData.map((proj: Project, index: number) => ({
             resumeId: id,
             name: proj.name,
             url: proj.url,
@@ -168,7 +169,7 @@ export async function PUT(
       await db.delete(certifications).where(eq(certifications.resumeId, id));
       if (certificationsData?.length) {
         await db.insert(certifications).values(
-          certificationsData.map((cert: any, index: number) => ({
+          certificationsData.map((cert: Certification, index: number) => ({
             resumeId: id,
             name: cert.name,
             issuer: cert.issuer,

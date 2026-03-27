@@ -2,10 +2,74 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useSession } from "./auth-client";
-import { useResume, ResumeData } from "./resume-context";
+import { useResume, ResumeData, Experience, Education, Project, Certification } from "./resume-context";
 
 const STORAGE_KEY = "ascendume_resume_draft";
 const DEBOUNCE_MS = 1000;
+
+// Database query result types
+interface DbPersonalInfo {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  summary?: string;
+  website?: string;
+  linkedin?: string;
+  github?: string;
+}
+
+interface DbWorkExperience {
+  id: string;
+  company?: string;
+  position?: string;
+  startDate?: string;
+  endDate?: string;
+  current?: boolean;
+  bullets?: string;
+}
+
+interface DbEducation {
+  id: string;
+  institution?: string;
+  degree?: string;
+  field?: string;
+  gpa?: string;
+  graduationDate?: string;
+}
+
+interface DbSkills {
+  technical?: string;
+  frameworks?: string;
+  tools?: string;
+}
+
+interface DbProject {
+  id: string;
+  name?: string;
+  url?: string;
+  technologies?: string;
+  description?: string;
+}
+
+interface DbCertification {
+  id: string;
+  name?: string;
+  issuer?: string;
+  date?: string;
+  credentialUrl?: string;
+}
+
+interface DbResume {
+  id: string;
+  title: string;
+  personalInfo?: DbPersonalInfo[];
+  workExperience?: DbWorkExperience[];
+  education?: DbEducation[];
+  skills?: DbSkills;
+  projects?: DbProject[];
+  certifications?: DbCertification[];
+}
 
 export function useResumePersistence() {
   const { data: session, isPending } = useSession();
@@ -24,7 +88,7 @@ export function useResumePersistence() {
         try {
           const response = await fetch("/api/resumes");
           if (response.ok) {
-            const resumes = await response.json();
+            const resumes: DbResume[] = await response.json();
             if (resumes.length > 0) {
               // Load the most recent resume
               const resume = resumes[0];
@@ -43,7 +107,7 @@ export function useResumePersistence() {
                   linkedin: resume.personalInfo?.[0]?.linkedin || "",
                   github: resume.personalInfo?.[0]?.github || "",
                 },
-                experience: (resume.workExperience || []).map((exp: any) => ({
+                experience: (resume.workExperience || []).map((exp: DbWorkExperience): Experience => ({
                   id: exp.id,
                   company: exp.company || "",
                   position: exp.position || "",
@@ -52,7 +116,7 @@ export function useResumePersistence() {
                   current: exp.current || false,
                   bullets: exp.bullets || "",
                 })),
-                education: (resume.education || []).map((edu: any) => ({
+                education: (resume.education || []).map((edu: DbEducation): Education => ({
                   id: edu.id,
                   institution: edu.institution || "",
                   degree: edu.degree || "",
@@ -65,14 +129,14 @@ export function useResumePersistence() {
                   frameworks: resume.skills?.frameworks || "",
                   tools: resume.skills?.tools || "",
                 },
-                projects: (resume.projects || []).map((proj: any) => ({
+                projects: (resume.projects || []).map((proj: DbProject): Project => ({
                   id: proj.id,
                   name: proj.name || "",
                   url: proj.url || "",
                   technologies: proj.technologies || "",
                   description: proj.description || "",
                 })),
-                certifications: (resume.certifications || []).map((cert: any) => ({
+                certifications: (resume.certifications || []).map((cert: DbCertification): Certification => ({
                   id: cert.id,
                   name: cert.name || "",
                   issuer: cert.issuer || "",

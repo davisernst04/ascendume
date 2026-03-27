@@ -15,7 +15,6 @@ if (typeof window !== "undefined") {
 
 export function PDFResumePreview() {
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [containerWidth, setContainerWidth] = useState<number>(300);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,14 +37,12 @@ export function PDFResumePreview() {
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
-    setIsLoading(false);
     setError(null);
   }
 
   function onDocumentLoadError(err: Error) {
     console.error("PDF load error:", err);
     setError(err.message);
-    setIsLoading(false);
   }
 
   return (
