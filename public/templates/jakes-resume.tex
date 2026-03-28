@@ -1,0 +1,122 @@
+% Jake's Resume Template
+% A clean, professional LaTeX resume template
+
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{multicol}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage[dvipdfmx]{graphics}
+
+\titleformat{\section}{\large\bfseries\uppercase}{}{0em}{}[\titlerule]
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    pdftitle={Resume},
+    pdfauthor={User}
+}
+
+\setlength{\parindent}{0em}
+\setlength{\parskip}{0.5em}
+
+% Custom colors
+\definecolor{primary}{RGB}{0,51,102}
+\definecolor{secondary}{RGB}{68,119,170}
+
+\begin{document}
+\begin{center}
+    \textbf{\LARGE \textcolor{primary}{John Doe}} \\[0.2cm]
+    \begin{minipage}{0.8\linewidth}
+    \centering
+    \begin{itemize*}[noitemsep,nolistsep]
+      \item john.doe@example.com
+      \item (555) 123-4567
+      \item San Francisco, CA
+      \item \url{https://johndoe.com}
+      \item \url{https://linkedin.com/in/johndoe}
+      \item \url{https://github.com/johndoe}
+    \end{itemize*}
+    \end{minipage}
+\end{center}
+
+\section*{Summary}
+Results-driven software engineer with 5+ years of experience building scalable web applications. Expert in full-stack development, cloud architecture, and agile methodologies. Proven track record of delivering high-quality software solutions that drive business growth.
+
+\section*{Experience}
+
+\textbf{Senior Software Engineer} \hfill 2020 -- Present
+\textit{Tech Corp, San Francisco, CA}
+
+\begin{itemize*}[noitemsep,nolistsep]
+  \item Led development of a microservices architecture that improved system scalability by 300\%
+  \item Designed and implemented RESTful APIs handling 10K+ requests per second
+  \item Mentored 4 junior developers and established coding best practices
+  \item Optimized database queries resulting in 40\% faster page load times
+  \item Collaborated with cross-functional teams to deliver features on time
+\end{itemize*}
+
+\textbf{Software Engineer} \hfill 2018 -- 2020
+\textit{Startup Inc, Austin, TX}
+
+\begin{itemize*}[noitemsep,nolistsep]
+  \item Developed responsive web applications using React and Node.js
+  \item Integrated third-party APIs including payment processing and analytics
+  \item Implemented CI/CD pipelines reducing deployment time by 60\%
+  \item Conducted code reviews and ensured high code quality
+  \item Participated in Agile sprints and daily standups
+\end{itemize*}
+
+\textbf{Junior Developer} \hfill 2016 -- 2018
+\textit{Web Solutions, Dallas, TX}
+
+\begin{itemize*}[noitemsep,nolistsep]
+  \item Built client websites using HTML, CSS, and JavaScript
+  \item Assisted in database design and maintenance
+  \item Collaborated with designers to implement UI/UX specifications
+  \item Troubleshot and resolved bug reports
+\end{itemize*}
+
+\section*{Education}
+
+\textbf{University of Texas} \hfill 2016
+\textit{Bachelor of Science in Computer Science} \hfill GPA: 3.8/4.0
+
+\section*{Skills}
+
+\begin{itemize*}[noitemsep,nolistsep]
+  \item \textbf{Technical:} JavaScript, TypeScript, Python, Java, C\#
+  \item \textbf{Frameworks:} React, Next.js, Node.js, Express, Django
+  \item \textbf{Tools:} Git, Docker, AWS, Kubernetes, CI/CD
+\end{itemize*}
+
+\section*{Projects}
+
+\textbf{E-commerce Platform} \hfill \url{https://github.com/johndoe/ecommerce}
+\hfill \textit{React, Node.js, PostgreSQL, AWS}
+
+Developed a full-stack e-commerce application with 10K+ products, featuring secure payment processing, user authentication, and real-time inventory management.
+
+\textbf{Task Management App} \hfill \url{https://github.com/johndoe/tasks}
+\hfill \textit{Next.js, TypeScript, MongoDB}
+
+Created a productivity application with drag-and-drop task management, team collaboration features, and mobile-responsive design.
+
+\textbf{Weather Dashboard} \hfill \url{https://github.com/johndoe/weather}
+\hfill \textit{Vue.js, Chart.js, OpenWeather API}
+
+Built a real-time weather tracking application with location-based forecasts, historical data visualization, and custom alert system.
+
+\section*{Certifications}
+
+\textbf{AWS Certified Solutions Architect} \hfill 2022
+\textit{Amazon Web Services}
+
+\textbf{Microsoft Certified: Azure Developer Associate} \hfill 2021
+\textit{Microsoft}
+
+\end{document}

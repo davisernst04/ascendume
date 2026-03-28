@@ -64,6 +64,108 @@ export interface ResumeData {
   certifications: Certification[];
 }
 
+// Jake's Resume Template (default template for Ascendume)
+export const jakesResumeTemplate: ResumeData = {
+  title: "John Doe - Resume",
+  personalInfo: {
+    fullName: "John Doe",
+    email: "john.doe@example.com",
+    phone: "(555) 123-4567",
+    location: "San Francisco, CA",
+    summary: "Results-driven software engineer with 5+ years of experience building scalable web applications. Expert in full-stack development, cloud architecture, and agile methodologies. Proven track record of delivering high-quality software solutions that drive business growth.",
+    website: "https://johndoe.com",
+    linkedin: "linkedin.com/in/johndoe",
+    github: "github.com/johndoe",
+  },
+  experience: [
+    {
+      id: "exp1",
+      company: "Tech Corp",
+      position: "Senior Software Engineer",
+      startDate: "2020",
+      endDate: "Present",
+      current: true,
+      bullets: "Led development of a microservices architecture that improved system scalability by 300%\nDesigned and implemented RESTful APIs handling 10K+ requests per second\nMentored 4 junior developers and established coding best practices\nOptimized database queries resulting in 40% faster page load times\nCollaborated with cross-functional teams to deliver features on time",
+    },
+    {
+      id: "exp2",
+      company: "Startup Inc",
+      position: "Software Engineer",
+      startDate: "2018",
+      endDate: "2020",
+      current: false,
+      bullets: "Developed responsive web applications using React and Node.js\nIntegrated third-party APIs including payment processing and analytics\nImplemented CI/CD pipelines reducing deployment time by 60%\nConducted code reviews and ensured high code quality\nParticipated in Agile sprints and daily standups",
+    },
+    {
+      id: "exp3",
+      company: "Web Solutions",
+      position: "Junior Developer",
+      startDate: "2016",
+      endDate: "2018",
+      current: false,
+      bullets: "Built client websites using HTML, CSS, and JavaScript\nAssisted in database design and maintenance\nCollaborated with designers to implement UI/UX specifications\nTroubleshot and resolved bug reports",
+    },
+  ],
+  education: [
+    {
+      id: "edu1",
+      institution: "University of Texas",
+      degree: "Bachelor of Science",
+      field: "Computer Science",
+      gpa: "3.8/4.0",
+      graduationDate: "2016",
+    },
+  ],
+  skills: {
+    technical: "JavaScript, TypeScript, Python, Java, C#",
+    frameworks: "React, Next.js, Node.js, Express, Django",
+    tools: "Git, Docker, AWS, Kubernetes, CI/CD",
+  },
+  projects: [
+    {
+      id: "proj1",
+      name: "E-commerce Platform",
+      url: "https://github.com/johndoe/ecommerce",
+      technologies: "React, Node.js, PostgreSQL, AWS",
+      description: "Developed a full-stack e-commerce application with 10K+ products, featuring secure payment processing, user authentication, and real-time inventory management.",
+    },
+    {
+      id: "proj2",
+      name: "Task Management App",
+      url: "https://github.com/johndoe/tasks",
+      technologies: "Next.js, TypeScript, MongoDB",
+      description: "Created a productivity application with drag-and-drop task management, team collaboration features, and mobile-responsive design.",
+    },
+    {
+      id: "proj3",
+      name: "Weather Dashboard",
+      url: "https://github.com/johndoe/weather",
+      technologies: "Vue.js, Chart.js, OpenWeather API",
+      description: "Built a real-time weather tracking application with location-based forecasts, historical data visualization, and custom alert system.",
+    },
+  ],
+  certifications: [
+    {
+      id: "cert1",
+      name: "AWS Certified Solutions Architect",
+      issuer: "Amazon Web Services",
+      date: "2022",
+      credentialUrl: "https://aws.amazon.com/certification",
+    },
+    {
+      id: "cert2",
+      name: "Microsoft Certified: Azure Developer Associate",
+      issuer: "Microsoft",
+      date: "2021",
+      credentialUrl: "https://learn.microsoft.com/en-us/certifications/",
+    },
+  ],
+};
+
+export const resumeTemplates = {
+  jake: jakesResumeTemplate,
+};
+
 const defaultResumeData: ResumeData = {
   title: "My Resume",
   personalInfo: {
