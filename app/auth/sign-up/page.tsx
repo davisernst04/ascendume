@@ -44,7 +44,7 @@ export default function SignUpPage() {
         router.push("/");
         router.refresh();
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred during sign up");
     } finally {
       setIsLoading(false);

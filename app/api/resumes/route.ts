@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { resumes, personalInfo, workExperience, education, skills, projects, certifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { Experience, Education, Project, Certification } from "@/lib/resume-context";
 
 // GET /api/resumes - Get all resumes for the current user
 export async function GET() {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Create work experience
     if (workExperienceData?.length) {
       await db.insert(workExperience).values(
-        workExperienceData.map((exp: any, index: number) => ({
+        workExperienceData.map((exp: Experience, index: number) => ({
           resumeId: resume.id,
           ...exp,
           order: index,
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Create education
     if (educationData?.length) {
       await db.insert(education).values(
-        educationData.map((edu: any, index: number) => ({
+        educationData.map((edu: Education, index: number) => ({
           resumeId: resume.id,
           ...edu,
           order: index,
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Create projects
     if (projectsData?.length) {
       await db.insert(projects).values(
-        projectsData.map((proj: any, index: number) => ({
+        projectsData.map((proj: Project, index: number) => ({
           resumeId: resume.id,
           ...proj,
           order: index,
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Create certifications
     if (certificationsData?.length) {
       await db.insert(certifications).values(
-        certificationsData.map((cert: any, index: number) => ({
+        certificationsData.map((cert: Certification, index: number) => ({
           resumeId: resume.id,
           ...cert,
           order: index,
