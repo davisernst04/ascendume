@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: new Headers() });
+    const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -47,7 +47,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: new Headers() });
+    const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -194,7 +194,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: new Headers() });
+    const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

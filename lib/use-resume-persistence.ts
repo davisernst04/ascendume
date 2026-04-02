@@ -71,11 +71,11 @@ interface DbResume {
   certifications?: DbCertification[];
 }
 
-export function useResumePersistence() {
+export function useResumePersistence(resumeId?: string) {
   const { data: session, isPending } = useSession();
   const { resumeData, setResumeData } = useResume();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const resumeIdRef = useRef<string | null>(null);
+  const resumeIdRef = useRef<string | null>(resumeId && resumeId !== "new" ? resumeId : null);
   const isInitialLoadRef = useRef(true);
 
   // Load resume on mount
@@ -83,91 +83,94 @@ export function useResumePersistence() {
     if (isPending) return;
 
     const loadResume = async () => {
-      if (session?.user) {
+      if (resumeId === "new") {
+        isInitialLoadRef.current = false;
+        return;
+      }
+
+      if (session?.user && resumeId) {
         // Try to load from database
         try {
-          const response = await fetch("/api/resumes");
+          const response = await fetch(`/api/resumes/${resumeId}`);
           if (response.ok) {
-            const resumes: DbResume[] = await response.json();
-            if (resumes.length > 0) {
-              // Load the most recent resume
-              const resume = resumes[0];
-              resumeIdRef.current = resume.id;
-              
-              // Transform database format to context format
-              setResumeData({
-                title: resume.title,
-                personalInfo: {
-                  fullName: resume.personalInfo?.[0]?.fullName || "",
-                  email: resume.personalInfo?.[0]?.email || "",
-                  phone: resume.personalInfo?.[0]?.phone || "",
-                  location: resume.personalInfo?.[0]?.location || "",
-                  summary: resume.personalInfo?.[0]?.summary || "",
-                  website: resume.personalInfo?.[0]?.website || "",
-                  linkedin: resume.personalInfo?.[0]?.linkedin || "",
-                  github: resume.personalInfo?.[0]?.github || "",
-                },
-                experience: (resume.workExperience || []).map((exp: DbWorkExperience): Experience => ({
-                  id: exp.id,
-                  company: exp.company || "",
-                  position: exp.position || "",
-                  startDate: exp.startDate || "",
-                  endDate: exp.endDate || "",
-                  current: exp.current || false,
-                  bullets: exp.bullets || "",
-                })),
-                education: (resume.education || []).map((edu: DbEducation): Education => ({
-                  id: edu.id,
-                  institution: edu.institution || "",
-                  degree: edu.degree || "",
-                  field: edu.field || "",
-                  gpa: edu.gpa || "",
-                  graduationDate: edu.graduationDate || "",
-                })),
-                skills: {
-                  technical: resume.skills?.technical || "",
-                  frameworks: resume.skills?.frameworks || "",
-                  tools: resume.skills?.tools || "",
-                },
-                projects: (resume.projects || []).map((proj: DbProject): Project => ({
-                  id: proj.id,
-                  name: proj.name || "",
-                  url: proj.url || "",
-                  technologies: proj.technologies || "",
-                  description: proj.description || "",
-                })),
-                certifications: (resume.certifications || []).map((cert: DbCertification): Certification => ({
-                  id: cert.id,
-                  name: cert.name || "",
-                  issuer: cert.issuer || "",
-                  date: cert.date || "",
-                  credentialUrl: cert.credentialUrl || "",
-                })),
-              });
-              isInitialLoadRef.current = false;
-              return;
-            }
+            const resume: DbResume = await response.json();
+            
+            // Transform database format to context format
+            setResumeData({
+              id: resume.id,
+              title: resume.title,
+              personalInfo: {
+                fullName: resume.personalInfo?.[0]?.fullName || "",
+                email: resume.personalInfo?.[0]?.email || "",
+                phone: resume.personalInfo?.[0]?.phone || "",
+                location: resume.personalInfo?.[0]?.location || "",
+                summary: resume.personalInfo?.[0]?.summary || "",
+                website: resume.personalInfo?.[0]?.website || "",
+                linkedin: resume.personalInfo?.[0]?.linkedin || "",
+                github: resume.personalInfo?.[0]?.github || "",
+              },
+              experience: (resume.workExperience || []).map((exp: DbWorkExperience): Experience => ({
+                id: exp.id,
+                company: exp.company || "",
+                position: exp.position || "",
+                startDate: exp.startDate || "",
+                endDate: exp.endDate || "",
+                current: exp.current || false,
+                bullets: exp.bullets || "",
+              })),
+              education: (resume.education || []).map((edu: DbEducation): Education => ({
+                id: edu.id,
+                institution: edu.institution || "",
+                degree: edu.degree || "",
+                field: edu.field || "",
+                gpa: edu.gpa || "",
+                graduationDate: edu.graduationDate || "",
+              })),
+              skills: {
+                technical: resume.skills?.technical || "",
+                frameworks: resume.skills?.frameworks || "",
+                tools: resume.skills?.tools || "",
+              },
+              projects: (resume.projects || []).map((proj: DbProject): Project => ({
+                id: proj.id,
+                name: proj.name || "",
+                url: proj.url || "",
+                technologies: proj.technologies || "",
+                description: proj.description || "",
+              })),
+              certifications: (resume.certifications || []).map((cert: DbCertification): Certification => ({
+                id: cert.id,
+                name: cert.name || "",
+                issuer: cert.issuer || "",
+                date: cert.date || "",
+                credentialUrl: cert.credentialUrl || "",
+              })),
+            });
+            isInitialLoadRef.current = false;
+            return;
           }
         } catch (error) {
           console.error("Error loading resume from database:", error);
         }
       }
 
-      // Fall back to localStorage
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          setResumeData(parsed);
-        } catch (e) {
-          console.error("Error parsing saved resume:", e);
+      // Fall back to localStorage only if no ID
+      if (!resumeId) {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setResumeData(parsed);
+          } catch (e) {
+            console.error("Error parsing saved resume:", e);
+          }
         }
       }
       isInitialLoadRef.current = false;
     };
 
     loadResume();
-  }, [session?.user, isPending, setResumeData]);
+  }, [session?.user, isPending, setResumeData, resumeId]);
 
   // Save resume with debouncing
   const saveResume = useCallback(async (data: ResumeData) => {
@@ -209,6 +212,7 @@ export function useResumePersistence() {
           if (response.ok) {
             const resume = await response.json();
             resumeIdRef.current = resume.id;
+            setResumeData({ ...data, id: resume.id });
           }
         }
       } catch (error) {
@@ -218,7 +222,7 @@ export function useResumePersistence() {
       // Save to localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
-  }, [session?.user]);
+  }, [session?.user, setResumeData]);
 
   // Debounced save on data change
   useEffect(() => {

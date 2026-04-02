@@ -17,22 +17,15 @@ const PDFResumePreview = dynamic(
 
 const HeroButtons = ({ className }: { className?: string }) => (
   <div className={className}>
-    <Link href="/builder">
+    <Link href="/auth/sign-in">
       <Button
         size="lg"
         className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full sm:w-auto"
       >
-        Build My Resume
+        Get Started
         <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
       </Button>
     </Link>
-    <Button
-      size="lg"
-      variant="outline"
-      className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black border-2 rounded-xl w-full sm:w-auto dark:border-zinc-800 dark:hover:bg-zinc-900"
-    >
-      View Gallery
-    </Button>
   </div>
 );
 
@@ -65,7 +58,7 @@ export default function Home() {
                 Sign In
               </Button>
             </Link>
-            <Link href="/builder">
+            <Link href="/auth/sign-in">
               <Button
                 size="sm"
                 className="font-bold shadow-lg shadow-primary/20 rounded-xl"
@@ -103,7 +96,7 @@ export default function Home() {
                     Sign In
                   </Button>
                 </Link>
-                <Link href="/builder">
+                <Link href="/auth/sign-in">
                   <Button className="w-full font-black h-12 rounded-xl">
                     Get Started
                   </Button>
@@ -166,12 +159,6 @@ export default function Home() {
               <div className="flex gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
                 <a href="#" className="hover:text-primary transition-colors">
                   Privacy
-                </a>
-                <a href="#" className="hover:text-primary transition-colors">
-                  Twitter
-                </a>
-                <a href="#" className="hover:text-primary transition-colors">
-                  LinkedIn
                 </a>
               </div>
             </div>

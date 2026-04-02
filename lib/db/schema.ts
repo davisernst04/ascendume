@@ -66,6 +66,7 @@ export const resumes = pgTable("resumes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 255 }).notNull().default("My Resume"),
+  originalFileUrl: text("original_file_url"),
   isDefault: boolean("is_default").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

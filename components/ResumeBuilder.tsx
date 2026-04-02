@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { ResumeProvider, useResume } from "@/lib/resume-context";
 import { ResumePreview } from "./ResumePreview";
 import { ThemeToggle } from "./theme-toggle";
-import { usePdfExport } from "@/lib/use-pdf-export";
 import { AIEnhanceButton } from "./ai-enhance-button";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
 
@@ -53,10 +52,37 @@ const defaultSections: Section[] = [
   { id: "6", type: "certifications", title: "Certifications", expanded: false },
 ];
 
-function ResumeBuilderContent() {
+function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const { resumeData, updateTitle } = useResume();
-  const { exportPdf, isExporting } = usePdfExport();
-  useResumePersistence(); // Auto-save to database or localStorage
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportPdf = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch(`/api/resumes/${resumeData.id || "new"}/export`, {
+        method: "POST",
+        body: JSON.stringify(resumeData),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${resumeData.title || "resume"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  useResumePersistence(resumeId); // Auto-save to database or localStorage
   const [sections, setSections] = useState<Section[]>(defaultSections);
   const [activeSection, setActiveSection] = useState<string>("1");
 
@@ -121,7 +147,7 @@ function ResumeBuilderContent() {
             <Button 
               size="sm" 
               className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2"
-              onClick={() => exportPdf(resumeData)}
+              onClick={() => exportPdf()}
               disabled={isExporting}
             >
               {isExporting ? (
@@ -752,10 +778,10 @@ function CertificationsEditor() {
   );
 }
 
-export default function ResumeBuilder() {
+export default function ResumeBuilder({ resumeId }: { resumeId?: string }) {
   return (
     <ResumeProvider>
-      <ResumeBuilderContent />
+      <ResumeBuilderContent resumeId={resumeId} />
     </ResumeProvider>
   );
 }

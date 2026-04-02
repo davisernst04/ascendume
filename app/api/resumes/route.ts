@@ -6,9 +6,9 @@ import { eq } from "drizzle-orm";
 import { Experience, Education, Project, Certification } from "@/lib/resume-context";
 
 // GET /api/resumes - Get all resumes for the current user
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: new Headers() });
+    const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -36,7 +36,7 @@ export async function GET() {
 // POST /api/resumes - Create a new resume
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: new Headers() });
+    const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

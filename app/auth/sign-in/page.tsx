@@ -26,13 +26,13 @@ export default function SignInPage() {
       const result = await signIn.email({
         email,
         password,
-        callbackURL: "/",
+        callbackURL: "/dashboard",
       });
 
       if (result.error) {
         setError(result.error.message ?? "An error occurred during sign in");
       } else {
-        router.push("/");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch {
