@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { resumes } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { SidebarUserButton } from "@/components/sidebar-user-button";
+import { SidebarToggleButton } from "@/components/sidebar-toggle-button";
 
 export async function DashboardSidebar() {
   const session = await auth.api.getSession({
@@ -23,20 +24,25 @@ export async function DashboardSidebar() {
   });
 
   return (
-    <div className="w-64 bg-zinc-950 text-zinc-300 flex flex-col h-full border-r border-zinc-800 shrink-0">
-      <div className="p-4">
-        <Link href="/dashboard" className="block">
+    <div className="w-full bg-zinc-950 text-zinc-300 flex flex-col h-full border-zinc-800 shrink-0">
+      <div className="p-3 flex items-center justify-between">
+        <Link 
+          href="/" 
+          className="mr-2 block transition-all duration-300 overflow-hidden whitespace-nowrap group-data-[state=closed]/sidebar:w-0 group-data-[state=closed]/sidebar:opacity-0 group-data-[state=closed]/sidebar:m-0"
+        >
           <Button
             variant="ghost"
-            className="w-full justify-start gap-2 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 hover:text-zinc-50 border border-zinc-800 h-10 px-3"
+            className="w-[172px] justify-start gap-2 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 hover:text-zinc-50 border border-zinc-800 h-10 px-3 shrink-0"
           >
             <Plus className="h-4 w-4" />
             <span className="font-medium">New Resume</span>
           </Button>
         </Link>
+        <SidebarToggleButton />
       </div>
 
-      <div className="flex-1 px-3 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 overflow-hidden flex flex-col transition-all duration-300 group-data-[state=closed]/sidebar:opacity-0 group-data-[state=closed]/sidebar:pointer-events-none">
+        <div className="flex-1 px-3 overflow-y-auto overflow-x-hidden">
         <div className="space-y-1 pb-4">
           <p className="px-2 py-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
             Recent Resumes
@@ -59,8 +65,9 @@ export async function DashboardSidebar() {
           )}
         </div>
       </div>
+      </div>
 
-      <div className="p-3 border-t border-zinc-800">
+      <div className="p-3 border-t border-zinc-800 transition-all duration-300 flex justify-center group-data-[state=closed]/sidebar:px-2">
         <SidebarUserButton session={session} />
       </div>
     </div>

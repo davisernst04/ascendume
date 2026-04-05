@@ -22,7 +22,7 @@ export function SidebarUserButton({ session }: { session: { user: { name: string
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-2 h-12 px-2 hover:bg-zinc-800 text-zinc-300"
+          className="w-full justify-start gap-2 h-12 px-2 hover:bg-zinc-800 text-zinc-300 group-data-[state=closed]/sidebar:justify-center group-data-[state=closed]/sidebar:px-0"
         >
           <Avatar className="h-8 w-8 shrink-0">
             <AvatarImage src={session.user.image || ""} alt={session.user.name} />
@@ -30,7 +30,7 @@ export function SidebarUserButton({ session }: { session: { user: { name: string
               {session.user.name?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col items-start overflow-hidden w-full text-left">
+          <div className="flex flex-col items-start overflow-hidden w-full text-left group-data-[state=closed]/sidebar:hidden">
             <span className="text-sm font-medium truncate w-full text-zinc-100">
               {session.user.name}
             </span>
@@ -51,13 +51,13 @@ export function SidebarUserButton({ session }: { session: { user: { name: string
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="cursor-pointer">
+          <Link href="/" className="cursor-pointer">
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="cursor-pointer">
+          <Link href="/" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </Link>
