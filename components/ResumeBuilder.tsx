@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   User,
   Briefcase,
@@ -14,7 +13,6 @@ import {
   GripVertical,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
   Download,
   Loader2,
 } from "lucide-react";
@@ -91,139 +89,66 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
     ));
   };
 
-  const addSection = (type: SectionType) => {
-    const existing = sections.find((s) => s.type === type);
-    if (existing) {
-      setActiveSection(existing.id);
-      if (!existing.expanded) {
-        toggleSection(existing.id);
-      }
-      return;
-    }
-    
-    const newSection: Section = {
-      id: crypto.randomUUID(),
-      type,
-      title: type === "experience" ? "Work Experience" :
-             type === "education" ? "Education" :
-             type === "skills" ? "Skills" :
-             type === "projects" ? "Projects" :
-             type === "certifications" ? "Certifications" : "Personal Info",
-      expanded: true,
-    };
-    setSections([...sections, newSection]);
-    setActiveSection(newSection.id);
-  };
-
-  const removeSection = (id: string) => {
-    setSections(sections.filter((s) => s.id !== id));
-  };
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="max-w-[1800px] mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="font-bold text-lg">ascendume</span>
-            </Link>
-            <div className="h-6 w-px bg-border" />
-            <input
-              type="text"
-              value={resumeData.title}
-              onChange={(e) => updateTitle(e.target.value)}
-              className="bg-transparent border-none text-lg font-medium focus:outline-none focus:ring-0 w-48"
-              placeholder="Resume title"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="font-bold rounded-lg">
-              Preview
-            </Button>
-            <Button 
-              size="sm" 
-              className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2"
+    <div className="flex flex-col h-full bg-background text-foreground">
+      {/* Section Tab Navbar */}
+      <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shrink-0">
+        <div className="px-4 h-12 flex items-center gap-1 overflow-x-auto">
+          <input
+            type="text"
+            value={resumeData.title}
+            onChange={(e) => updateTitle(e.target.value)}
+            className="bg-transparent border-none text-sm font-semibold focus:outline-none focus:ring-0 w-36 shrink-0 text-foreground"
+            placeholder="Resume title"
+          />
+          <div className="h-4 w-px bg-border shrink-0 mx-2" />
+          {sections.map((section) => {
+            const Icon = sectionIcons[section.type];
+            return (
+              <button
+                key={section.id}
+                onClick={() => {
+                  setActiveSection(section.id);
+                  setSections((prev) =>
+                    prev.map((s) => (s.id === section.id ? { ...s, expanded: true } : s))
+                  );
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors shrink-0 ${
+                  activeSection === section.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {section.title}
+              </button>
+            );
+          })}
+          <div className="ml-auto flex items-center gap-2 shrink-0 pl-4">
+            <Button
+              size="sm"
+              className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2 h-8"
               onClick={() => exportPdf()}
               disabled={isExporting}
             >
               {isExporting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Exporting...
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5" />
                   Export PDF
                 </>
               )}
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="flex h-[calc(100vh-3.5rem)]">
-        {/* Left Panel - Section List */}
-        <div className="w-64 border-r border-border bg-muted/30 overflow-y-auto shrink-0">
-          <div className="p-4">
-            <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">Sections</h3>
-            <div className="space-y-1">
-              {sections.map((section) => {
-                const Icon = sectionIcons[section.type];
-                return (
-                  <div
-                    key={section.id}
-                    className={`group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                      activeSection === section.id
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setActiveSection(section.id)}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="flex-1 text-sm font-medium">{section.title}</span>
-                    {section.type !== "personal" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSection(section.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-border">
-              <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">Add Section</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { type: "experience" as const, label: "Experience", Icon: Briefcase },
-                  { type: "education" as const, label: "Education", Icon: GraduationCap },
-                  { type: "skills" as const, label: "Skills", Icon: Code },
-                  { type: "projects" as const, label: "Projects", Icon: FolderKanban },
-                  { type: "certifications" as const, label: "Certs", Icon: Award },
-                ].map(({ type, label, Icon }) => (
-                  <button
-                    key={type}
-                    onClick={() => addSection(type)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-background rounded-lg border border-border hover:border-primary hover:text-primary transition-colors"
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
+      {/* Content Area */}
+      <div className="flex flex-1 min-h-0">
         {/* Center Panel - Editor */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-2xl mx-auto space-y-6">
@@ -245,7 +170,6 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
                       <ChevronDown className="w-5 h-5 text-muted-foreground" />
                     )}
                   </div>
-
                   {section.expanded && (
                     <div className="p-4 pt-0 border-t border-border">
                       <SectionEditor type={section.type} />
