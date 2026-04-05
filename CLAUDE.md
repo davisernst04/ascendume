@@ -28,7 +28,9 @@ The `app/` directory uses two route groups plus standalone routes:
 
 - `app/(marketing)/` — Landing page (unauthenticated)
 - `app/(application)/` — Dashboard (authenticated); page components live here as `-page.tsx` files rather than in `page.tsx` directly
-- `app/builder/[id]/` — Resume builder for a specific resume by ID
+- `app/(application)/[id]/` — Resume builder for an existing resume (URL: `/<id>`)
+- `app/(application)/new/` — Resume builder for a new resume (URL: `/new`)
+- `app/(application)/layout.tsx` — Auth-guarded layout: redirects unauthenticated users to `/auth/sign-in`, wraps builder routes with `DashboardLayoutClient` + `DashboardSidebar`
 - `app/auth/sign-in/` and `app/auth/sign-up/` — Auth pages
 - `app/api/` — Route handlers:
   - `resumes/` — CRUD for resumes
