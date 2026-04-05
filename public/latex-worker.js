@@ -8,9 +8,7 @@ async function initEngine() {
   if (engine) return;
   if (!initPromise) {
     initPromise = (async () => {
-      importScripts(
-        "https://cdn.jsdelivr.net/npm/swiftlatex@0.0.1/dist/PdfTeXEngine.js"
-      );
+      importScripts("/PdfTeXEngine.js");
       engine = new PdfTeXEngine();
       await engine.loadEngine();
     })();
@@ -25,7 +23,7 @@ self.onmessage = async (e) => {
     engine.writeMemFSFile("main.tex", latex);
     engine.setEngineMainFile("main.tex");
     const result = await engine.compileLaTeX();
-    if (result.status === "success") {
+    if (result.pdf !== undefined) {
       self.postMessage({ id, success: true, pdf: result.pdf });
     } else {
       self.postMessage({ id, success: false, log: result.log });
