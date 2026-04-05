@@ -2,88 +2,109 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 import { Loader2 } from "lucide-react";
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+import { buildLatex } from "@/lib/resume-latex";
+import type { ResumeData } from "@/lib/resume-context";
 
 interface Props {
-  pdfBytes: Uint8Array | null;
-  compiling: boolean;
-  error: string | null;
+  data: ResumeData;
+  onPdfReady?: (blob: Blob) => void;
+  width?: number;
 }
 
-export function LatexPdfPreview({ pdfBytes, compiling, error }: Props) {
-  const [numPages, setNumPages] = useState(0);
-  // Stable object reference for react-pdf — only update when bytes actually change
-  const fileRef = useRef<{ data: Uint8Array } | null>(null);
-  const [file, setFile] = useState<{ data: Uint8Array } | null>(null);
+type PreviewState =
+  | { type: "idle" }
+  | { type: "compiling" }
+  | { type: "ready"; url: string }
+  | { type: "error"; message: string };
 
+export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
+  const workerRef = useRef<Worker | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevUrlRef = useRef<string | null>(null);
+  const reqIdRef = useRef(0);
+  // Use a ref for onPdfReady so the worker handler never captures a stale closure
+  const onPdfReadyRef = useRef(onPdfReady);
+  onPdfReadyRef.current = onPdfReady;
+
+  const [state, setState] = useState<PreviewState>({ type: "idle" });
+
+  // Create the worker once on mount; terminate on unmount
   useEffect(() => {
-    if (pdfBytes && pdfBytes !== fileRef.current?.data) {
-      const next = { data: pdfBytes };
-      fileRef.current = next;
-      setFile(next);
-    }
-  }, [pdfBytes]);
+    const worker = new Worker("/latex-worker.js");
+    workerRef.current = worker;
 
-  if (!file && !compiling && !error) {
+    worker.onmessage = (ev) => {
+      const { id, success, pdf, log } = ev.data as {
+        id: number;
+        success: boolean;
+        pdf?: Uint8Array;
+        log?: string;
+      };
+      // Discard responses that arrived after a newer request was sent
+      if (id !== reqIdRef.current) return;
+
+      if (success && pdf) {
+        const blob = new Blob([pdf as BlobPart], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+        prevUrlRef.current = url;
+        setState({ type: "ready", url });
+        onPdfReadyRef.current?.(blob);
+      } else {
+        const errorLine =
+          (log ?? "")
+            .split("\n")
+            .find((l) => l.startsWith("!")) ?? log ?? "Unknown error";
+        setState({ type: "error", message: errorLine });
+      }
+    };
+
+    return () => {
+      worker.terminate();
+      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debounce compilation: 1500ms after the last data change
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (!workerRef.current) return;
+      const id = ++reqIdRef.current;
+      setState({ type: "compiling" });
+      workerRef.current.postMessage({ id, latex: buildLatex(data) });
+    }, 1500);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const height = Math.round(width * 1.294);
+
+  if (state.type === "idle" || state.type === "compiling") {
     return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm text-center px-4">
-        Start filling in your resume to see a live PDF preview.
+      <div
+        style={{ width, height }}
+        className="flex flex-col items-center justify-center text-muted-foreground text-sm gap-2"
+      >
+        <Loader2 className="w-4 h-4 animate-spin" />
+        {state.type === "compiling" ? "Compiling LaTeX…" : "Waiting for input…"}
+      </div>
+    );
+  }
+
+  if (state.type === "error") {
+    return (
+      <div className="px-3 py-2 text-xs text-destructive bg-destructive/10 rounded border border-destructive/20">
+        LaTeX error: {state.message}
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      {/* Compiling overlay — keeps last valid PDF visible */}
-      {compiling && (
-        <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded pointer-events-none">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
-        </div>
-      )}
-
-      {/* Error banner */}
-      {error && (
-        <div className="mb-2 px-3 py-2 text-xs text-destructive bg-destructive/10 rounded border border-destructive/20">
-          {file ? "Compile error (showing last valid PDF)" : `Compile error: ${error}`}
-        </div>
-      )}
-
-      {/* PDF render */}
-      {file && (
-        <Document
-          file={file}
-          onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-          loading={null}
-          error={
-            <div className="text-xs text-destructive p-3">
-              Failed to render PDF.
-            </div>
-          }
-        >
-          {Array.from({ length: numPages }, (_, i) => (
-            <Page
-              key={i + 1}
-              pageNumber={i + 1}
-              width={388}
-              renderTextLayer={false}
-              renderAnnotationLayer={false}
-            />
-          ))}
-        </Document>
-      )}
-
-      {/* Initial compiling state (no PDF yet) */}
-      {!file && compiling && (
-        <div className="flex items-center justify-center h-64 text-muted-foreground text-sm gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Compiling PDF (first compile fetches LaTeX packages — may take 30s)…
-        </div>
-      )}
-    </div>
+    <iframe
+      src={state.url}
+      style={{ width, height, border: "none" }}
+      title="Resume PDF Preview"
+    />
   );
 }
