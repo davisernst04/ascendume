@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { ResumeProvider, useResume } from "@/lib/resume-context";
 import { ResumePreview } from "./ResumePreview";
-import { ThemeToggle } from "./theme-toggle";
 import { AIEnhanceButton } from "./ai-enhance-button";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
 
@@ -140,7 +139,6 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
             />
           </div>
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             <Button variant="outline" size="sm" className="font-bold rounded-lg">
               Preview
             </Button>

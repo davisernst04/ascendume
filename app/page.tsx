@@ -1,28 +1,20 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import dynamic from "next/dynamic";
+import { PDFResumePreview } from "@/components/pdf-preview";
 import Link from "next/link";
 import { useState } from "react";
-import { AnimatePresence } from "motion/react";
-
-// Dynamically import PDF component with no SSR
-const PDFResumePreview = dynamic(
-  () => import("@/components/pdf-preview").then((mod) => mod.PDFResumePreview),
-  { ssr: false },
-);
 
 const HeroButtons = ({ className }: { className?: string }) => (
   <div className={className}>
-    <Link href="/auth/sign-in">
+    <Link href="/auth/sign-in" className="w-full">
       <Button
         size="lg"
-        className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full sm:w-auto"
+        className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full"
       >
-        Get Started
+        Start
         <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
       </Button>
     </Link>
@@ -52,9 +44,12 @@ export default function Home() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <ThemeToggle />
             <Link href="/auth/sign-in">
-              <Button variant="ghost" size="sm" className="font-bold rounded-xl">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="font-bold rounded-xl"
+              >
                 Sign In
               </Button>
             </Link>
@@ -69,7 +64,6 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2 md:hidden">
-            <ThemeToggle />
             <button
               className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors focus:outline-none"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -129,8 +123,8 @@ export default function Home() {
               {/* Desktop Headline - Hidden on mobile */}
               <Headline className="hidden lg:block" />
 
-              <div className="max-w-[500px] mx-auto lg:mx-0">
-                <HeroButtons className="mt-2 lg:mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start" />
+              <div className="max-w-none mx-auto lg:mx-0">
+                <HeroButtons className="mt-2 lg:mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start w-full" />
               </div>
             </motion.div>
 

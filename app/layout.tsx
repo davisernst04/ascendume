@@ -5,7 +5,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Ascendume - AI-Powered Resume Builder",
-  description: "Build your perfect resume in minutes with AI-powered resume optimization and ATS-friendly templates.",
+  description:
+    "Build your perfect resume in minutes with AI-powered resume optimization and ATS-friendly templates.",
 };
 
 export default function RootLayout({
@@ -18,13 +19,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-serif">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          forcedTheme="dark"
           disableTransitionOnChange
         >
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
       </body>
     </html>

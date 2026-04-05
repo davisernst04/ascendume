@@ -8,7 +8,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, FileText, Download, Edit, Trash2 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({
@@ -34,7 +33,6 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <div className="text-sm font-medium">{session.user.name}</div>
           </div>
         </div>
