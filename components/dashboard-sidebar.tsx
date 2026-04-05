@@ -26,8 +26,8 @@ export async function DashboardSidebar() {
   return (
     <div className="w-full bg-zinc-950 text-zinc-300 flex flex-col h-full border-zinc-800 shrink-0">
       <div className="p-3 flex items-center justify-between">
-        <Link 
-          href="/" 
+        <Link
+          href="/new"
           className="mr-2 block transition-all duration-300 overflow-hidden whitespace-nowrap group-data-[state=closed]/sidebar:w-0 group-data-[state=closed]/sidebar:opacity-0 group-data-[state=closed]/sidebar:m-0"
         >
           <Button
@@ -48,7 +48,7 @@ export async function DashboardSidebar() {
             Recent Resumes
           </p>
           {userResumes.map((resume) => (
-            <Link key={resume.id} href={`/builder/${resume.id}`}>
+            <Link key={resume.id} href={`/${resume.id}`}>
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-3 h-10 px-2 font-normal text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50 truncate"

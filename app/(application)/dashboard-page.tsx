@@ -257,8 +257,8 @@ export default function DashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
 
   const handleScratch = async () => {
-    // Go to /builder/new to initialize the builder
-    router.push("/builder/new");
+    // Go to /new to initialize the builder
+    router.push("/new");
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,7 +283,7 @@ export default function DashboardPage() {
       const { resumeId } = await response.json();
 
       // Redirect to the builder with the newly populated resume
-      router.push(`/builder/${resumeId}`);
+      router.push(`/${resumeId}`);
     } catch (err) {
       console.error(err);
       alert("Error uploading and parsing resume.");
