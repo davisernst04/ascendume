@@ -21,7 +21,14 @@ export function escapeLatex(str: string): string {
 
 // Convenience: escape or return empty string for optional fields
 function e(s: string | undefined | null): string {
-  return s ? escapeLatex(s) : "";
+  return escapeLatex(s ?? "");
+}
+
+function sanitizeUrl(raw: string | undefined | null): string {
+  if (!raw) return "";
+  const trimmed = raw.trim();
+  if (!/^(https?:\/\/|mailto:)/i.test(trimmed)) return "";
+  return trimmed.replace(/[{}\\]/g, "");
 }
 
 function parseBullets(raw: string): string[] {
@@ -40,17 +47,19 @@ export function buildLatex(data: ResumeData): string {
   if (p.phone) contactParts.push(e(p.phone));
   if (p.email)
     contactParts.push(
-      `\\href{mailto:${e(p.email)}}{\\underline{${e(p.email)}}}`
+      `\\href{${sanitizeUrl("mailto:" + p.email)}}{\\underline{${e(p.email)}}}`
     );
   if (p.linkedin)
     contactParts.push(
-      `\\href{${e(p.linkedin)}}{\\underline{${e(p.linkedin)}}}`
+      `\\href{${sanitizeUrl(p.linkedin)}}{\\underline{${e(p.linkedin)}}}`
     );
   if (p.github)
-    contactParts.push(`\\href{${e(p.github)}}{\\underline{${e(p.github)}}}`);
+    contactParts.push(
+      `\\href{${sanitizeUrl(p.github)}}{\\underline{${e(p.github)}}}`
+    );
   if (p.website)
     contactParts.push(
-      `\\href{${e(p.website)}}{\\underline{${e(p.website)}}}`
+      `\\href{${sanitizeUrl(p.website)}}{\\underline{${e(p.website)}}}`
     );
   const contactLine = contactParts.join(" $|$ ");
 
@@ -77,7 +86,7 @@ ${data.education
         : e(edu.degree || edu.field);
     const gpaStr = edu.gpa ? `, GPA: ${e(edu.gpa)}` : "";
     return `    \\resumeSubheading
-      {${e(edu.institution)}}{${e(p.location)}}
+      {${e(edu.institution)}}{}
       {${degree}${gpaStr}}{${e(edu.graduationDate)}}`;
   })
   .join("\n")}
@@ -131,7 +140,7 @@ ${data.projects
             .join("\n")}\n          \\resumeItemListEnd`
         : "";
     const nameStr = proj.url
-      ? `\\href{${e(proj.url)}}{\\underline{${e(proj.name)}}}`
+      ? `\\href{${sanitizeUrl(proj.url)}}{\\underline{${e(proj.name)}}}`
       : `\\textbf{${e(proj.name)}}`;
     const techStr = proj.technologies
       ? ` $|$ \\emph{${e(proj.technologies)}}`
