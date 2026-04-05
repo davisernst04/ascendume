@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_DIR="$REPO_ROOT/public/texlive"
 WORK_DIR="$(mktemp -d)"
-trap "rm -rf $WORK_DIR" EXIT
+trap 'rm -rf "$WORK_DIR"' EXIT
 
 echo "→ Work dir:   $WORK_DIR"
 echo "→ Output dir: $OUTPUT_DIR"
