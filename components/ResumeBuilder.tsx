@@ -1,7 +1,7 @@
 // components/ResumeBuilder.tsx
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   User,
   Briefcase,
@@ -17,13 +17,26 @@ import {
   Download,
   Loader2,
   Sparkles,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResumeProvider, useResume } from "@/lib/resume-context";
-import { LatexPdfPreview } from "./latex-pdf-preview";
+import { useSidebar } from "@/components/sidebar-context";
+import dynamic from "next/dynamic";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
-import { buildLatex } from "@/lib/latex-template";
-import { compileLaTeX } from "@/lib/latex-compiler";
+
+const LatexPdfPreview = dynamic(
+  () => import("./latex-pdf-preview").then((m) => m.LatexPdfPreview),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm gap-2">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Loading PDF viewer...
+      </div>
+    ),
+  }
+);
 
 type SectionType =
   | "personal"
@@ -63,40 +76,16 @@ const defaultSections: Section[] = [
 
 function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const { resumeData, setResumeData, updateTitle } = useResume();
+  const { isOpen: sidebarOpen } = useSidebar();
 
-  const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
-  const [compiling, setCompiling] = useState(false);
-  const [compileError, setCompileError] = useState<string | null>(null);
   const [enhancing, setEnhancing] = useState(false);
-
   const [sections, setSections] = useState<Section[]>(defaultSections);
   const [activeSection, setActiveSection] = useState<string>("1");
 
-  useResumePersistence(resumeId);
+  // Holds the latest generated PDF blob for download
+  const pdfBlobRef = useRef<Blob | null>(null);
 
-  // Debounced compile loop — fires 1000ms after any resumeData change
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setCompiling(true);
-      try {
-        const latex = buildLatex(resumeData);
-        const bytes = await compileLaTeX(latex);
-        setPdfBytes(bytes);
-        setCompileError(null);
-      } catch (err) {
-        setCompileError(
-          err instanceof Error ? err.message : "Compilation failed"
-        );
-      } finally {
-        setCompiling(false);
-      }
-    }, 1000);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [resumeData]);
+  useResumePersistence(resumeId);
 
   const handleEnhanceAll = useCallback(async () => {
     setEnhancing(true);
@@ -118,9 +107,8 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   }, [resumeData, setResumeData]);
 
   const handleDownload = useCallback(() => {
-    if (!pdfBytes) return;
-    const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
+    if (!pdfBlobRef.current) return;
+    const url = URL.createObjectURL(pdfBlobRef.current);
     const a = document.createElement("a");
     a.href = url;
     a.download = `${resumeData.title || "resume"}.pdf`;
@@ -128,7 +116,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [pdfBytes, resumeData.title]);
+  }, [resumeData.title]);
 
   const toggleSection = (id: string) => {
     setSections(
@@ -181,7 +169,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
               variant="outline"
               className="font-medium rounded-lg gap-2 h-8"
               onClick={handleEnhanceAll}
-              disabled={enhancing || compiling}
+              disabled={enhancing}
             >
               {enhancing ? (
                 <>
@@ -199,7 +187,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
               size="sm"
               className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2 h-8"
               onClick={handleDownload}
-              disabled={!pdfBytes || enhancing}
+              disabled={enhancing}
             >
               <Download className="w-3.5 h-3.5" />
               Download PDF
@@ -211,8 +199,8 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
       {/* Content Area */}
       <div className="flex flex-1 min-h-0">
         {/* Center Panel - Editor */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="max-w-2xl space-y-6">
             {sections
               .filter((s) => s.id === activeSection)
               .map((section) => {
@@ -251,16 +239,21 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
         </div>
 
         {/* Right Panel - PDF Preview */}
-        <div className="w-[420px] border-l border-border bg-muted/30 overflow-y-auto hidden lg:block shrink-0">
-          <div className="p-4">
-            <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">
-              Live Preview
-            </h3>
-            <LatexPdfPreview
-              pdfBytes={pdfBytes}
-              compiling={compiling}
-              error={compileError}
-            />
+        <div className={`overflow-y-auto hidden lg:block shrink-0 transition-all duration-300 ${sidebarOpen ? "w-[420px]" : "w-[612px]"}`}>
+          <div className="pl-2 pr-4 py-6">
+            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+              <div className="flex items-center gap-3 p-4 border-b border-border">
+                <Eye className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">Live Preview</h3>
+              </div>
+              <div className="p-4">
+                <LatexPdfPreview
+                  data={resumeData}
+                  onPdfReady={(blob) => { pdfBlobRef.current = blob; }}
+                  width={sidebarOpen ? 356 : 548}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
