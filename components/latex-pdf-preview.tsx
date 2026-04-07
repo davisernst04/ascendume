@@ -27,10 +27,14 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
   const prevUrlRef = useRef<string | null>(null);
   const reqIdRef = useRef(0);
   const onPdfReadyRef = useRef(onPdfReady);
-  onPdfReadyRef.current = onPdfReady;
 
   const [state, setState] = useState<PreviewState>({ type: "idle" });
   const [numPages, setNumPages] = useState<number>(0);
+
+  // Keep ref synced with latest callback
+  useEffect(() => {
+    onPdfReadyRef.current = onPdfReady;
+  }, [onPdfReady]);
 
   // Create the worker once on mount; terminate on unmount
   useEffect(() => {
@@ -67,7 +71,7 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
       if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Debounce compilation: 1500ms after the last data change
   useEffect(() => {
@@ -78,7 +82,7 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
       setState({ type: "compiling" });
       workerRef.current.postMessage({ id, latex: buildLatex(data) });
     }, 1500);
-  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const height = Math.round(width * 1.294);
 

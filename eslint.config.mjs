@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // WASM/third-party compiled JS files:
+    "public/PdfTeXEngine.js",
+    "public/swiftlatexpdftex.js",
+    "public/latex-worker.js",
+    "scripts/**",
   ]),
 ]);
 
