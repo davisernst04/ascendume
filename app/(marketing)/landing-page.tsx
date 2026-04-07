@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, Check, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PDFResumePreview } from "@/components/pdf-preview";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -29,11 +30,25 @@ const Headline = ({ className }: { className?: string }) => (
   </div>
 );
 
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
+    {children}
+  </p>
+);
+
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 transition-colors duration-300">
+      {/* Paper grain texture overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-[999] opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
       {/* Navigation */}
       <nav className="sticky top-0 z-[1000] border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
