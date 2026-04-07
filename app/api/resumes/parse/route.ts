@@ -94,11 +94,11 @@ export async function POST(req: NextRequest) {
     if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
       const buffer = Buffer.from(await file.arrayBuffer());
       
-      rawText = await new Promise((resolve, reject) => {
-        const pdfParser = new PDFParser(null as any, true);
-        pdfParser.on("pdfParser_dataError", (errData: any) => reject(errData.parserError || errData));
+      rawText = await new Promise<string>((resolve, reject) => {
+        const pdfParser = new PDFParser(undefined, true);
+        pdfParser.on("pdfParser_dataError", (errData: { parserError: Error } | Error) => reject(errData instanceof Error ? errData : errData.parserError));
         pdfParser.on("pdfParser_dataReady", () => {
-          resolve((pdfParser as any).getRawTextContent());
+          resolve(pdfParser.getRawTextContent());
         });
         pdfParser.parseBuffer(buffer);
       });
