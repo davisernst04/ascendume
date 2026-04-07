@@ -114,6 +114,21 @@ const steps = [
   },
 ];
 
+const freeFeatures = [
+  "1 resume",
+  "Limited AI enhancements per month",
+  "PDF export",
+  "Live LaTeX preview",
+];
+
+const proFeatures = [
+  "Unlimited resumes",
+  "Unlimited AI enhancements",
+  "PDF export",
+  "Live LaTeX preview",
+  "Priority support",
+];
+
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -317,6 +332,91 @@ export default function LandingPage() {
                   </Button>
                 </Link>
               </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section className="py-24 lg:py-32 border-t border-border">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="mb-16 text-center"
+            >
+              <SectionLabel>Pricing</SectionLabel>
+              <h2 className="text-5xl lg:text-6xl font-bold tracking-tighter">
+                Simple, honest pricing.
+              </h2>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                {/* Free card */}
+                <div className="rounded-2xl bg-card ring-1 ring-border p-8 flex flex-col">
+                  <SectionLabel>Free</SectionLabel>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold tracking-tighter">$0</span>
+                    <span className="text-muted-foreground ml-2 text-sm">
+                      / forever
+                    </span>
+                  </div>
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {freeFeatures.map((f) => (
+                      <li key={f} className="flex items-center gap-3 text-sm">
+                        <Check className="w-4 h-4 text-primary shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/auth/sign-in">
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-xl font-bold h-12"
+                    >
+                      Start for free
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Pro card */}
+                <div className="relative rounded-2xl bg-gradient-to-b from-primary/5 to-transparent ring-2 ring-primary p-8 flex flex-col">
+                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                    Most Popular
+                  </div>
+                  <SectionLabel>Pro</SectionLabel>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold tracking-tighter">$X</span>
+                    <span className="text-muted-foreground ml-2 text-sm">/ mo</span>
+                  </div>
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {proFeatures.map((f) => (
+                      <li key={f} className="flex items-center gap-3 text-sm">
+                        <Check className="w-4 h-4 text-primary shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/auth/sign-in">
+                    <Button className="w-full rounded-xl font-bold h-12 shadow-lg shadow-primary/20">
+                      Get Pro
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground mt-6">
+                No credit card required. Upgrade anytime.
+              </p>
             </motion.div>
           </div>
         </section>
