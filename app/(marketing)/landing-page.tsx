@@ -36,6 +36,63 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </p>
 );
 
+const features = [
+  {
+    num: "01",
+    title: "AI Bullet Enhancement",
+    description:
+      "Rewrites your bullet points to be stronger, more impactful, and ATS-optimized — so your experience speaks for itself.",
+  },
+  {
+    num: "02",
+    title: "Live LaTeX Preview",
+    description:
+      "See your resume render in real-time as you type. No refreshing, no guessing.",
+  },
+  {
+    num: "03",
+    title: "One-Click PDF Export",
+    description:
+      "Download a pixel-perfect PDF instantly, ready to send to any employer.",
+  },
+  {
+    num: "04",
+    title: "Smart Resume Parser",
+    description:
+      "Upload an existing resume and we'll import your content automatically.",
+  },
+];
+
+function FeatureCard({
+  num,
+  title,
+  description,
+  className,
+}: {
+  num: string;
+  title: string;
+  description: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl bg-card ring-1 ring-border p-8 flex flex-col justify-end",
+        "bg-gradient-to-br from-primary/5 to-transparent",
+        className
+      )}
+    >
+      <span className="absolute top-5 right-6 text-[96px] leading-none font-bold text-muted-foreground/10 select-none pointer-events-none">
+        {num}
+      </span>
+      <h3 className="text-2xl font-bold tracking-tight mb-2">{title}</h3>
+      <p className="text-muted-foreground leading-relaxed text-sm">
+        {description}
+      </p>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -149,6 +206,41 @@ export default function LandingPage() {
                 <PDFResumePreview />
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-24 lg:py-32 border-t border-border">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="mb-12"
+            >
+              <SectionLabel>Features</SectionLabel>
+              <h2 className="text-5xl lg:text-6xl font-bold tracking-tighter">
+                Everything you need
+                <br />
+                to land the job.
+              </h2>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4"
+            >
+              <FeatureCard {...features[0]} className="min-h-[320px]" />
+              <div className="grid grid-cols-1 gap-4">
+                {features.slice(1).map((f) => (
+                  <FeatureCard key={f.num} {...f} />
+                ))}
+              </div>
+            </motion.div>
           </div>
         </section>
 
