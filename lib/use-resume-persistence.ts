@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "./auth-client";
 import { useResume, ResumeData, Experience, Education, Project, Certification } from "./resume-context";
 
@@ -23,6 +24,7 @@ interface DbWorkExperience {
   id: string;
   company?: string;
   position?: string;
+  location?: string;
   startDate?: string;
   endDate?: string;
   current?: boolean;
@@ -63,10 +65,10 @@ interface DbCertification {
 interface DbResume {
   id: string;
   title: string;
-  personalInfo?: DbPersonalInfo[];
+  personalInfo?: DbPersonalInfo | null;
   workExperience?: DbWorkExperience[];
   education?: DbEducation[];
-  skills?: DbSkills;
+  skills?: DbSkills | null;
   projects?: DbProject[];
   certifications?: DbCertification[];
 }
@@ -74,6 +76,7 @@ interface DbResume {
 export function useResumePersistence(resumeId?: string) {
   const { data: session, isPending } = useSession();
   const { resumeData, setResumeData } = useResume();
+  const router = useRouter();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const resumeIdRef = useRef<string | null>(resumeId && resumeId !== "new" ? resumeId : null);
   const isInitialLoadRef = useRef(true);
@@ -100,19 +103,20 @@ export function useResumePersistence(resumeId?: string) {
               id: resume.id,
               title: resume.title,
               personalInfo: {
-                fullName: resume.personalInfo?.[0]?.fullName || "",
-                email: resume.personalInfo?.[0]?.email || "",
-                phone: resume.personalInfo?.[0]?.phone || "",
-                location: resume.personalInfo?.[0]?.location || "",
-                summary: resume.personalInfo?.[0]?.summary || "",
-                website: resume.personalInfo?.[0]?.website || "",
-                linkedin: resume.personalInfo?.[0]?.linkedin || "",
-                github: resume.personalInfo?.[0]?.github || "",
+                fullName: resume.personalInfo?.fullName || "",
+                email: resume.personalInfo?.email || "",
+                phone: resume.personalInfo?.phone || "",
+                location: resume.personalInfo?.location || "",
+                summary: resume.personalInfo?.summary || "",
+                website: resume.personalInfo?.website || "",
+                linkedin: resume.personalInfo?.linkedin || "",
+                github: resume.personalInfo?.github || "",
               },
               experience: (resume.workExperience || []).map((exp: DbWorkExperience): Experience => ({
                 id: exp.id,
                 company: exp.company || "",
                 position: exp.position || "",
+                location: exp.location || "",
                 startDate: exp.startDate || "",
                 endDate: exp.endDate || "",
                 current: exp.current || false,
@@ -213,6 +217,7 @@ export function useResumePersistence(resumeId?: string) {
             const resume = await response.json();
             resumeIdRef.current = resume.id;
             setResumeData({ ...data, id: resume.id });
+            router.replace(`/${resume.id}`);
           }
         }
       } catch (error) {
@@ -222,7 +227,7 @@ export function useResumePersistence(resumeId?: string) {
       // Save to localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
-  }, [session?.user, setResumeData]);
+  }, [session?.user, setResumeData, router]);
 
   // Debounced save on data change
   useEffect(() => {

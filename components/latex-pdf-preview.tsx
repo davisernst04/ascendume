@@ -3,8 +3,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { Document, Page, pdfjs } from "react-pdf";
 import { buildLatex } from "@/lib/resume-latex";
 import type { ResumeData } from "@/lib/resume-context";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface Props {
   data: ResumeData;
@@ -23,11 +26,11 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevUrlRef = useRef<string | null>(null);
   const reqIdRef = useRef(0);
-  // Use a ref for onPdfReady so the worker handler never captures a stale closure
   const onPdfReadyRef = useRef(onPdfReady);
   onPdfReadyRef.current = onPdfReady;
 
   const [state, setState] = useState<PreviewState>({ type: "idle" });
+  const [numPages, setNumPages] = useState<number>(0);
 
   // Create the worker once on mount; terminate on unmount
   useEffect(() => {
@@ -41,7 +44,6 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
         pdf?: Uint8Array;
         log?: string;
       };
-      // Discard responses that arrived after a newer request was sent
       if (id !== reqIdRef.current) return;
 
       if (success && pdf) {
@@ -101,10 +103,20 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
   }
 
   return (
-    <iframe
-      src={state.url}
-      style={{ width, height, border: "none" }}
-      title="Resume PDF Preview"
-    />
+    <Document
+      file={state.url}
+      onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+      loading={null}
+    >
+      {Array.from({ length: numPages }, (_, i) => (
+        <Page
+          key={i}
+          pageNumber={i + 1}
+          width={width}
+          renderTextLayer={false}
+          renderAnnotationLayer={false}
+        />
+      ))}
+    </Document>
   );
 }

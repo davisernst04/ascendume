@@ -22,46 +22,46 @@ export const maxDuration = 60;
 
 const resumeSchema = z.object({
   personalInfo: z.object({
-    fullName: z.string().default(""),
-    email: z.string().default(""),
-    phone: z.string().default(""),
-    location: z.string().default(""),
-    summary: z.string().default(""),
-    website: z.string().default(""),
-    linkedin: z.string().default(""),
-    github: z.string().default(""),
+    fullName: z.string(),
+    email: z.string(),
+    phone: z.string(),
+    location: z.string(),
+    summary: z.string(),
+    website: z.string(),
+    linkedin: z.string(),
+    github: z.string(),
   }),
   experience: z.array(z.object({
-    company: z.string().default(""),
-    position: z.string().default(""),
-    startDate: z.string().default(""),
-    endDate: z.string().default(""),
-    current: z.boolean().default(false),
-    bullets: z.string().default(""),
+    company: z.string(),
+    position: z.string(),
+    startDate: z.string(),
+    endDate: z.string(),
+    current: z.boolean(),
+    bullets: z.string(),
   })),
   education: z.array(z.object({
-    institution: z.string().default(""),
-    degree: z.string().default(""),
-    field: z.string().default(""),
-    gpa: z.string().default(""),
-    graduationDate: z.string().default(""),
+    institution: z.string(),
+    degree: z.string(),
+    field: z.string(),
+    gpa: z.string(),
+    graduationDate: z.string(),
   })),
   skills: z.object({
-    technical: z.string().default(""),
-    frameworks: z.string().default(""),
-    tools: z.string().default(""),
+    technical: z.string(),
+    frameworks: z.string(),
+    tools: z.string(),
   }),
   projects: z.array(z.object({
-    name: z.string().default(""),
-    url: z.string().default(""),
-    technologies: z.string().default(""),
-    description: z.string().default(""),
+    name: z.string(),
+    url: z.string(),
+    technologies: z.string(),
+    description: z.string(),
   })),
   certifications: z.array(z.object({
-    name: z.string().default(""),
-    issuer: z.string().default(""),
-    date: z.string().default(""),
-    credentialUrl: z.string().default(""),
+    name: z.string(),
+    issuer: z.string(),
+    date: z.string(),
+    credentialUrl: z.string(),
   })),
 });
 
@@ -82,8 +82,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // 1. Upload to Blob
-    const blob = await put(file.name, file, { access: 'public' });
+    // 1. Upload to Blob (optional — requires BLOB_READ_WRITE_TOKEN)
+    let blobUrl: string | null = null;
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(file.name, file, { access: 'private', addRandomSuffix: true });
+      blobUrl = blob.url;
+    }
 
     // 2. Extract Text
     let rawText = "";
@@ -117,7 +121,7 @@ export async function POST(req: NextRequest) {
     const [newResume] = await db.insert(resumes).values({
       userId: session.user.id,
       title: `${object.personalInfo.fullName || "My"} Resume`,
-      originalFileUrl: blob.url,
+      ...(blobUrl ? { originalFileUrl: blobUrl } : {}),
     }).returning({ id: resumes.id });
 
     // Insert sub-tables
@@ -173,7 +177,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ resumeId: newResume.id });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error("Parse Error:", error);
-    return NextResponse.json({ error: "Failed to parse resume" }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

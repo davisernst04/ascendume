@@ -114,8 +114,8 @@ ${data.experience
             .join("\n")}\n      \\resumeItemListEnd`
         : "";
     return `    \\resumeSubheading
+      {${e(exp.company)}}{${e(exp.location)}}
       {${e(exp.position)}}{${dateRange}}
-      {${e(exp.company)}}{}
 ${bulletBlock}`;
   })
   .join("\n")}

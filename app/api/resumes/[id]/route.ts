@@ -101,6 +101,7 @@ export async function PUT(
             resumeId: id,
             company: exp.company,
             position: exp.position,
+            location: exp.location,
             startDate: exp.startDate,
             endDate: exp.endDate,
             current: exp.current,

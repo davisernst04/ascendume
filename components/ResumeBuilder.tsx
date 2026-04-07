@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   User,
   Briefcase,
@@ -20,6 +21,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
 import { ResumeProvider, useResume } from "@/lib/resume-context";
 import { useSidebar } from "@/components/sidebar-context";
 import dynamic from "next/dynamic";
@@ -77,10 +79,17 @@ const defaultSections: Section[] = [
 function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const { resumeData, setResumeData, updateTitle } = useResume();
   const { isOpen: sidebarOpen } = useSidebar();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const tabParam = searchParams.get("tab") as SectionType | null;
+  const initialSection = defaultSections.find((s) => s.type === tabParam) ?? defaultSections[0];
 
   const [enhancing, setEnhancing] = useState(false);
-  const [sections, setSections] = useState<Section[]>(defaultSections);
-  const [activeSection, setActiveSection] = useState<string>("1");
+  const [sections, setSections] = useState<Section[]>(
+    defaultSections.map((s) => ({ ...s, expanded: s.id === initialSection.id }))
+  );
+  const [activeSection, setActiveSection] = useState<string>(initialSection.id);
 
   // Holds the latest generated PDF blob for download
   const pdfBlobRef = useRef<Blob | null>(null);
@@ -150,6 +159,9 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
                       s.id === section.id ? { ...s, expanded: true } : s
                     )
                   );
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set("tab", section.type);
+                  router.replace(`?${params.toString()}`);
                 }}
                 disabled={enhancing}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors shrink-0 ${
@@ -448,6 +460,19 @@ function ExperienceEditor({ disabled }: { disabled: boolean }) {
                 disabled={disabled}
               />
             </div>
+          </div>
+          <div className="mt-4">
+            <label className={labelClass}>Location</label>
+            <input
+              type="text"
+              className={inputClass}
+              placeholder="San Francisco, CA"
+              value={exp.location}
+              onChange={(e) =>
+                updateExperience(exp.id, { location: e.target.value })
+              }
+              disabled={disabled}
+            />
           </div>
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div>
@@ -865,7 +890,9 @@ function CertificationsEditor({ disabled }: { disabled: boolean }) {
 export default function ResumeBuilder({ resumeId }: { resumeId?: string }) {
   return (
     <ResumeProvider>
-      <ResumeBuilderContent resumeId={resumeId} />
+      <Suspense>
+        <ResumeBuilderContent resumeId={resumeId} />
+      </Suspense>
     </ResumeProvider>
   );
 }

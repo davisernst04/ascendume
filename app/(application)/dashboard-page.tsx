@@ -276,11 +276,13 @@ export default function DashboardPage() {
         body: formData,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to parse resume");
+        throw new Error(data.error ?? "Failed to parse resume");
       }
 
-      const { resumeId } = await response.json();
+      const { resumeId } = data;
 
       // Redirect to the builder with the newly populated resume
       router.push(`/${resumeId}`);
