@@ -294,8 +294,8 @@ export default function LandingPage() {
                 <div className="hidden md:block absolute top-9 left-[20%] right-[20%] border-t border-dashed border-border" />
 
                 {steps.map((step, i) => (
-                  <div key={i} className="flex flex-col">
-                    <span className="text-8xl font-bold tracking-tighter leading-none mb-5 text-foreground">
+                  <div key={step.num} className="flex flex-col">
+                    <span className="text-8xl font-bold font-serif tracking-tighter leading-none mb-5 text-foreground">
                       {step.num}
                     </span>
                     <h3 className="text-xl font-bold mb-2">{step.title}</h3>
