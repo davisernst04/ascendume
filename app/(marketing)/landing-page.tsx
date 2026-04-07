@@ -82,7 +82,7 @@ function FeatureCard({
         className
       )}
     >
-      <span className="absolute top-5 right-6 text-[96px] leading-none font-bold text-muted-foreground/10 select-none pointer-events-none">
+      <span className="absolute top-5 right-6 text-[96px] leading-none font-bold text-muted-foreground/20 select-none pointer-events-none">
         {num}
       </span>
       <h3 className="text-2xl font-bold tracking-tight mb-2">{title}</h3>
@@ -308,7 +308,7 @@ export default function LandingPage() {
                 {/* Dashed connector — desktop only */}
                 <div className="hidden md:block absolute top-9 left-[20%] right-[20%] border-t border-dashed border-border" />
 
-                {steps.map((step, i) => (
+                {steps.map((step) => (
                   <div key={step.num} className="flex flex-col">
                     <span className="text-8xl font-bold font-serif tracking-tighter leading-none mb-5 text-foreground">
                       {step.num}
