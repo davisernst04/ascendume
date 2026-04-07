@@ -96,6 +96,7 @@ export const workExperience = pgTable("work_experience", {
   resumeId: text("resume_id").notNull().references(() => resumes.id, { onDelete: "cascade" }),
   company: varchar("company", { length: 255 }),
   position: varchar("position", { length: 255 }),
+  location: varchar("location", { length: 255 }),
   startDate: varchar("start_date", { length: 50 }),
   endDate: varchar("end_date", { length: 50 }),
   current: boolean("current").notNull().default(false),

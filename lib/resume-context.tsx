@@ -17,6 +17,7 @@ export interface Experience {
   id: string;
   company: string;
   position: string;
+  location: string;
   startDate: string;
   endDate: string;
   current: boolean;
@@ -129,6 +130,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
       id: Date.now().toString(),
       company: exp?.company || "",
       position: exp?.position || "",
+      location: exp?.location || "",
       startDate: exp?.startDate || "",
       endDate: exp?.endDate || "",
       current: exp?.current || false,

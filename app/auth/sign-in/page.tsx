@@ -44,13 +44,13 @@ export default function SignInPage() {
       const result = await signIn.email({
         email,
         password,
-        callbackURL: "/dashboard",
+        callbackURL: "/",
       });
 
       if (result.error) {
         setError(result.error.message ?? "An error occurred during sign in");
       } else {
-        router.push("/dashboard");
+        router.push("/");
         router.refresh();
       }
     } catch {
@@ -66,7 +66,7 @@ export default function SignInPage() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: "/",
       });
     } catch {
       setError("An error occurred during Google sign in");

@@ -1,0 +1,87 @@
+<h2>Builder layout with persistent sidebar + section navbar</h2>
+<p class="subtitle">Confirming the overall structure before we discuss the navbar style</p>
+
+<div class="mockup">
+  <div class="mockup-header">Resume Builder — Full Layout</div>
+  <div class="mockup-body" style="padding:0;overflow:hidden">
+    <div style="display:flex;height:360px;font-size:11px;background:#09090b">
+
+      <!-- Persistent sidebar (same as dashboard) -->
+      <div style="width:72px;background:#09090b;border-right:1px solid #27272a;display:flex;flex-direction:column;padding:8px 0;flex-shrink:0">
+        <div style="padding:6px 8px;margin-bottom:8px">
+          <div style="background:#18181b;border:1px solid #3f3f46;border-radius:4px;padding:5px 6px;display:flex;align-items:center;gap:4px">
+            <div style="width:10px;height:10px;background:#52525b;border-radius:2px"></div>
+            <span style="font-size:8px;color:#71717a;flex:1">New</span>
+            <div style="width:8px;height:8px;background:#52525b;border-radius:50%"></div>
+          </div>
+        </div>
+        <div style="padding:0 6px;flex:1">
+          <div style="font-size:8px;color:#52525b;text-transform:uppercase;letter-spacing:0.05em;padding:2px 4px;margin-bottom:4px">Recent</div>
+          <div style="padding:4px 6px;display:flex;align-items:center;gap:4px;margin-bottom:2px">
+            <div style="width:7px;height:7px;background:#52525b;border-radius:1px;flex-shrink:0"></div>
+            <div style="font-size:8px;color:#71717a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">My Resume</div>
+          </div>
+          <div style="padding:4px 6px;display:flex;align-items:center;gap:4px;margin-bottom:2px;background:#27272a;border-radius:3px">
+            <div style="width:7px;height:7px;background:#a1a1aa;border-radius:1px;flex-shrink:0"></div>
+            <div style="font-size:8px;color:#e4e4e7;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">SWE 2025</div>
+          </div>
+          <div style="padding:4px 6px;display:flex;align-items:center;gap:4px">
+            <div style="width:7px;height:7px;background:#52525b;border-radius:1px;flex-shrink:0"></div>
+            <div style="font-size:8px;color:#71717a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Intern</div>
+          </div>
+        </div>
+        <div style="padding:6px 8px;border-top:1px solid #27272a">
+          <div style="width:28px;height:28px;background:#27272a;border-radius:50%;margin:0 auto"></div>
+        </div>
+      </div>
+
+      <!-- Main builder area -->
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+
+        <!-- Builder top navbar with section tabs -->
+        <div style="height:44px;border-bottom:1px solid #27272a;display:flex;align-items:center;padding:0 12px;gap:2px;background:#09090b;flex-shrink:0">
+          <div style="font-size:9px;color:#a1a1aa;font-weight:600;margin-right:8px;white-space:nowrap">SWE 2025</div>
+          <div style="width:1px;height:16px;background:#27272a;margin-right:8px"></div>
+          <div style="padding:4px 8px;background:#3f3f46;border-radius:4px;font-size:9px;color:#e4e4e7;white-space:nowrap">Personal</div>
+          <div style="padding:4px 8px;border-radius:4px;font-size:9px;color:#71717a;white-space:nowrap">Experience</div>
+          <div style="padding:4px 8px;border-radius:4px;font-size:9px;color:#71717a;white-space:nowrap">Education</div>
+          <div style="padding:4px 8px;border-radius:4px;font-size:9px;color:#71717a;white-space:nowrap">Skills</div>
+          <div style="padding:4px 8px;border-radius:4px;font-size:9px;color:#71717a;white-space:nowrap">Projects</div>
+          <div style="padding:4px 8px;border-radius:4px;font-size:9px;color:#71717a;white-space:nowrap">Certs</div>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <div style="padding:4px 8px;border:1px solid #3f3f46;border-radius:4px;font-size:9px;color:#a1a1aa">Preview</div>
+            <div style="padding:4px 8px;background:#e4e4e7;border-radius:4px;font-size:9px;color:#09090b;font-weight:600">Export PDF</div>
+          </div>
+        </div>
+
+        <!-- Builder content area -->
+        <div style="flex:1;display:flex;min-height:0">
+          <!-- Form panel -->
+          <div style="flex:1;padding:12px;overflow:auto;border-right:1px solid #27272a">
+            <div style="height:10px;background:#27272a;border-radius:3px;width:40%;margin-bottom:8px"></div>
+            <div style="height:7px;background:#18181b;border-radius:3px;width:90%;margin-bottom:5px"></div>
+            <div style="height:7px;background:#18181b;border-radius:3px;width:75%;margin-bottom:5px"></div>
+            <div style="height:7px;background:#18181b;border-radius:3px;width:85%;margin-bottom:14px"></div>
+            <div style="height:10px;background:#27272a;border-radius:3px;width:35%;margin-bottom:8px"></div>
+            <div style="height:7px;background:#18181b;border-radius:3px;width:80%;margin-bottom:5px"></div>
+            <div style="height:7px;background:#18181b;border-radius:3px;width:60%"></div>
+          </div>
+          <!-- PDF preview panel -->
+          <div style="width:120px;background:#18181b;padding:10px;flex-shrink:0">
+            <div style="background:#27272a;border-radius:2px;height:100%;display:flex;align-items:center;justify-content:center">
+              <div style="text-align:center">
+                <div style="height:6px;background:#3f3f46;border-radius:2px;width:60px;margin:0 auto 4px"></div>
+                <div style="height:4px;background:#3f3f46;border-radius:2px;width:50px;margin:0 auto 4px"></div>
+                <div style="height:4px;background:#3f3f46;border-radius:2px;width:55px;margin:0 auto"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;color:var(--text-secondary)">The left sidebar stays the same as the dashboard. Inside the builder, section navigation (Personal, Experience, Education…) moves to a <strong>top navbar</strong> above the form. The builder's current left section panel goes away.</p>
+<p style="color:var(--text-secondary)">Does this match what you're picturing?</p>

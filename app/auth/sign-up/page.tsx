@@ -53,13 +53,13 @@ export default function SignUpPage() {
         email,
         password,
         name,
-        callbackURL: "/dashboard",
+        callbackURL: "/",
       });
 
       if (result.error) {
         setError(result.error.message ?? "An error occurred during sign up");
       } else {
-        router.push("/dashboard");
+        router.push("/");
         router.refresh();
       }
     } catch {
@@ -75,7 +75,7 @@ export default function SignUpPage() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: "/",
       });
     } catch {
       setError("An error occurred during Google sign in");

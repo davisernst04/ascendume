@@ -1,7 +1,8 @@
+// components/ResumeBuilder.tsx
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useRef, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   User,
   Briefcase,
@@ -14,17 +15,38 @@ import {
   GripVertical,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
   Download,
   Loader2,
+  Sparkles,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
 import { ResumeProvider, useResume } from "@/lib/resume-context";
-import { ResumePreview } from "./ResumePreview";
-import { AIEnhanceButton } from "./ai-enhance-button";
+import { useSidebar } from "@/components/sidebar-context";
+import dynamic from "next/dynamic";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
 
-type SectionType = "personal" | "experience" | "education" | "skills" | "projects" | "certifications";
+const LatexPdfPreview = dynamic(
+  () => import("./latex-pdf-preview").then((m) => m.LatexPdfPreview),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm gap-2">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Loading PDF viewer...
+      </div>
+    ),
+  }
+);
+
+type SectionType =
+  | "personal"
+  | "experience"
+  | "education"
+  | "skills"
+  | "projects"
+  | "certifications";
 
 interface Section {
   id: string;
@@ -33,7 +55,10 @@ interface Section {
   expanded: boolean;
 }
 
-const sectionIcons: Record<SectionType, React.ComponentType<{ className?: string }>> = {
+const sectionIcons: Record<
+  SectionType,
+  React.ComponentType<{ className?: string }>
+> = {
   personal: User,
   experience: Briefcase,
   education: GraduationCap,
@@ -52,216 +77,195 @@ const defaultSections: Section[] = [
 ];
 
 function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
-  const { resumeData, updateTitle } = useResume();
-  const [isExporting, setIsExporting] = useState(false);
+  const { resumeData, setResumeData, updateTitle } = useResume();
+  const { isOpen: sidebarOpen } = useSidebar();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const exportPdf = async () => {
-    setIsExporting(true);
+  const tabParam = searchParams.get("tab") as SectionType | null;
+  const initialSection = defaultSections.find((s) => s.type === tabParam) ?? defaultSections[0];
+
+  const [enhancing, setEnhancing] = useState(false);
+  const [sections, setSections] = useState<Section[]>(
+    defaultSections.map((s) => ({ ...s, expanded: s.id === initialSection.id }))
+  );
+  const [activeSection, setActiveSection] = useState<string>(initialSection.id);
+
+  // Holds the latest generated PDF blob for download
+  const pdfBlobRef = useRef<Blob | null>(null);
+
+  useResumePersistence(resumeId);
+
+  const handleEnhanceAll = useCallback(async () => {
+    setEnhancing(true);
     try {
-      const res = await fetch(`/api/resumes/${resumeData.id || "new"}/export`, {
+      const res = await fetch("/api/ai/enhance-all", {
         method: "POST",
-        body: JSON.stringify(resumeData),
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(resumeData),
       });
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${resumeData.title || "resume"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (!res.ok) throw new Error("Enhancement failed");
+      const enhanced = await res.json();
+      setResumeData(enhanced);
     } catch (err) {
       console.error(err);
-      alert("Failed to export PDF");
+      alert("Failed to enhance resume. Please try again.");
     } finally {
-      setIsExporting(false);
+      setEnhancing(false);
     }
-  };
+  }, [resumeData, setResumeData]);
 
-  useResumePersistence(resumeId); // Auto-save to database or localStorage
-  const [sections, setSections] = useState<Section[]>(defaultSections);
-  const [activeSection, setActiveSection] = useState<string>("1");
+  const handleDownload = useCallback(() => {
+    if (!pdfBlobRef.current) return;
+    const url = URL.createObjectURL(pdfBlobRef.current);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${resumeData.title || "resume"}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [resumeData.title]);
 
   const toggleSection = (id: string) => {
-    setSections(sections.map((s) =>
-      s.id === id ? { ...s, expanded: !s.expanded } : s
-    ));
-  };
-
-  const addSection = (type: SectionType) => {
-    const existing = sections.find((s) => s.type === type);
-    if (existing) {
-      setActiveSection(existing.id);
-      if (!existing.expanded) {
-        toggleSection(existing.id);
-      }
-      return;
-    }
-    
-    const newSection: Section = {
-      id: crypto.randomUUID(),
-      type,
-      title: type === "experience" ? "Work Experience" :
-             type === "education" ? "Education" :
-             type === "skills" ? "Skills" :
-             type === "projects" ? "Projects" :
-             type === "certifications" ? "Certifications" : "Personal Info",
-      expanded: true,
-    };
-    setSections([...sections, newSection]);
-    setActiveSection(newSection.id);
-  };
-
-  const removeSection = (id: string) => {
-    setSections(sections.filter((s) => s.id !== id));
+    setSections(
+      sections.map((s) => (s.id === id ? { ...s, expanded: !s.expanded } : s))
+    );
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="max-w-[1800px] mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="font-bold text-lg">ascendume</span>
-            </Link>
-            <div className="h-6 w-px bg-border" />
-            <input
-              type="text"
-              value={resumeData.title}
-              onChange={(e) => updateTitle(e.target.value)}
-              className="bg-transparent border-none text-lg font-medium focus:outline-none focus:ring-0 w-48"
-              placeholder="Resume title"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="font-bold rounded-lg">
-              Preview
-            </Button>
-            <Button 
-              size="sm" 
-              className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2"
-              onClick={() => exportPdf()}
-              disabled={isExporting}
+    <div className="flex flex-col h-full bg-background text-foreground">
+      {/* Section Tab Navbar */}
+      <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shrink-0">
+        <div className="px-4 h-12 flex items-center gap-1 overflow-x-auto">
+          <input
+            type="text"
+            value={resumeData.title}
+            onChange={(e) => updateTitle(e.target.value)}
+            className="bg-transparent border-none text-sm font-semibold focus:outline-none focus:ring-0 w-36 shrink-0 text-foreground"
+            placeholder="Resume title"
+            disabled={enhancing}
+          />
+          <div className="h-4 w-px bg-border shrink-0 mx-2" />
+          {sections.map((section) => {
+            const Icon = sectionIcons[section.type];
+            return (
+              <button
+                key={section.id}
+                onClick={() => {
+                  setActiveSection(section.id);
+                  setSections((prev) =>
+                    prev.map((s) =>
+                      s.id === section.id ? { ...s, expanded: true } : s
+                    )
+                  );
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set("tab", section.type);
+                  router.replace(`?${params.toString()}`);
+                }}
+                disabled={enhancing}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors shrink-0 ${
+                  activeSection === section.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {section.title}
+              </button>
+            );
+          })}
+          <div className="ml-auto flex items-center gap-2 shrink-0 pl-4">
+            <Button
+              size="sm"
+              variant="outline"
+              className="font-medium rounded-lg gap-2 h-8"
+              onClick={handleEnhanceAll}
+              disabled={enhancing}
             >
-              {isExporting ? (
+              {enhancing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Exporting...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Enhancing…
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
-                  Export PDF
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Enhance with AI
                 </>
               )}
             </Button>
+            <Button
+              size="sm"
+              className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2 h-8"
+              onClick={handleDownload}
+              disabled={enhancing}
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download PDF
+            </Button>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="flex h-[calc(100vh-3.5rem)]">
-        {/* Left Panel - Section List */}
-        <div className="w-64 border-r border-border bg-muted/30 overflow-y-auto shrink-0">
-          <div className="p-4">
-            <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">Sections</h3>
-            <div className="space-y-1">
-              {sections.map((section) => {
+      {/* Content Area */}
+      <div className="flex flex-1 min-h-0">
+        {/* Center Panel - Editor */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="max-w-2xl space-y-6">
+            {sections
+              .filter((s) => s.id === activeSection)
+              .map((section) => {
                 const Icon = sectionIcons[section.type];
                 return (
                   <div
                     key={section.id}
-                    className={`group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                      activeSection === section.id
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setActiveSection(section.id)}
+                    className="bg-card border border-border rounded-xl overflow-hidden shadow-sm"
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="flex-1 text-sm font-medium">{section.title}</span>
-                    {section.type !== "personal" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSection(section.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => toggleSection(section.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 text-primary" />
+                        <h2 className="font-semibold">{section.title}</h2>
+                      </div>
+                      {section.expanded ? (
+                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    {section.expanded && (
+                      <div className="p-4 pt-0 border-t border-border">
+                        <SectionEditor
+                          type={section.type}
+                          disabled={enhancing}
+                        />
+                      </div>
                     )}
                   </div>
                 );
               })}
-            </div>
+          </div>
+        </div>
 
-            <div className="mt-6 pt-4 border-t border-border">
-              <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">Add Section</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { type: "experience" as const, label: "Experience", Icon: Briefcase },
-                  { type: "education" as const, label: "Education", Icon: GraduationCap },
-                  { type: "skills" as const, label: "Skills", Icon: Code },
-                  { type: "projects" as const, label: "Projects", Icon: FolderKanban },
-                  { type: "certifications" as const, label: "Certs", Icon: Award },
-                ].map(({ type, label, Icon }) => (
-                  <button
-                    key={type}
-                    onClick={() => addSection(type)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-background rounded-lg border border-border hover:border-primary hover:text-primary transition-colors"
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {label}
-                  </button>
-                ))}
+        {/* Right Panel - PDF Preview */}
+        <div className={`overflow-y-auto hidden lg:block shrink-0 transition-all duration-300 ${sidebarOpen ? "w-[420px]" : "w-[612px]"}`}>
+          <div className="pl-2 pr-4 py-6">
+            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+              <div className="flex items-center gap-3 p-4 border-b border-border">
+                <Eye className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">Live Preview</h3>
+              </div>
+              <div className="p-4">
+                <LatexPdfPreview
+                  data={resumeData}
+                  onPdfReady={(blob) => { pdfBlobRef.current = blob; }}
+                  width={sidebarOpen ? 356 : 548}
+                />
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Center Panel - Editor */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-2xl mx-auto space-y-6">
-            {sections.filter((s) => s.id === activeSection).map((section) => {
-              const Icon = sectionIcons[section.type];
-              return (
-                <div key={section.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-                  <div
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => toggleSection(section.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-5 h-5 text-primary" />
-                      <h2 className="font-semibold">{section.title}</h2>
-                    </div>
-                    {section.expanded ? (
-                      <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-
-                  {section.expanded && (
-                    <div className="p-4 pt-0 border-t border-border">
-                      <SectionEditor type={section.type} />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Panel - Preview */}
-        <div className="w-[420px] border-l border-border bg-muted/30 overflow-y-auto hidden lg:block shrink-0">
-          <div className="p-4">
-            <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">Live Preview</h3>
-            <ResumePreview />
           </div>
         </div>
       </div>
@@ -269,29 +273,36 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   );
 }
 
-function SectionEditor({ type }: { type: SectionType }) {
+function SectionEditor({
+  type,
+  disabled,
+}: {
+  type: SectionType;
+  disabled: boolean;
+}) {
   switch (type) {
     case "personal":
-      return <PersonalInfoEditor />;
+      return <PersonalInfoEditor disabled={disabled} />;
     case "experience":
-      return <ExperienceEditor />;
+      return <ExperienceEditor disabled={disabled} />;
     case "education":
-      return <EducationEditor />;
+      return <EducationEditor disabled={disabled} />;
     case "skills":
-      return <SkillsEditor />;
+      return <SkillsEditor disabled={disabled} />;
     case "projects":
-      return <ProjectsEditor />;
+      return <ProjectsEditor disabled={disabled} />;
     case "certifications":
-      return <CertificationsEditor />;
+      return <CertificationsEditor disabled={disabled} />;
     default:
       return null;
   }
 }
 
-const inputClass = "w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors";
+const inputClass =
+  "w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 const labelClass = "block text-sm font-medium mb-1.5 text-foreground";
 
-function PersonalInfoEditor() {
+function PersonalInfoEditor({ disabled }: { disabled: boolean }) {
   const { resumeData, updatePersonalInfo } = useResume();
   const { personalInfo } = resumeData;
 
@@ -306,6 +317,7 @@ function PersonalInfoEditor() {
             placeholder="John Doe"
             value={personalInfo.fullName}
             onChange={(e) => updatePersonalInfo({ fullName: e.target.value })}
+            disabled={disabled}
           />
         </div>
         <div>
@@ -316,6 +328,7 @@ function PersonalInfoEditor() {
             placeholder="john@example.com"
             value={personalInfo.email}
             onChange={(e) => updatePersonalInfo({ email: e.target.value })}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -328,6 +341,7 @@ function PersonalInfoEditor() {
             placeholder="+1 (555) 123-4567"
             value={personalInfo.phone}
             onChange={(e) => updatePersonalInfo({ phone: e.target.value })}
+            disabled={disabled}
           />
         </div>
         <div>
@@ -338,6 +352,7 @@ function PersonalInfoEditor() {
             placeholder="San Francisco, CA"
             value={personalInfo.location}
             onChange={(e) => updatePersonalInfo({ location: e.target.value })}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -349,11 +364,7 @@ function PersonalInfoEditor() {
           placeholder="Write a brief summary of your professional background..."
           value={personalInfo.summary}
           onChange={(e) => updatePersonalInfo({ summary: e.target.value })}
-        />
-        <AIEnhanceButton
-          text={personalInfo.summary}
-          type="summary"
-          onEnhanced={(text) => updatePersonalInfo({ summary: text })}
+          disabled={disabled}
         />
       </div>
       <div className="grid grid-cols-3 gap-4">
@@ -365,6 +376,7 @@ function PersonalInfoEditor() {
             placeholder="https://yoursite.com"
             value={personalInfo.website}
             onChange={(e) => updatePersonalInfo({ website: e.target.value })}
+            disabled={disabled}
           />
         </div>
         <div>
@@ -375,6 +387,7 @@ function PersonalInfoEditor() {
             placeholder="linkedin.com/in/..."
             value={personalInfo.linkedin}
             onChange={(e) => updatePersonalInfo({ linkedin: e.target.value })}
+            disabled={disabled}
           />
         </div>
         <div>
@@ -385,6 +398,7 @@ function PersonalInfoEditor() {
             placeholder="github.com/..."
             value={personalInfo.github}
             onChange={(e) => updatePersonalInfo({ github: e.target.value })}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -392,22 +406,29 @@ function PersonalInfoEditor() {
   );
 }
 
-function ExperienceEditor() {
-  const { resumeData, addExperience, updateExperience, removeExperience } = useResume();
+function ExperienceEditor({ disabled }: { disabled: boolean }) {
+  const { resumeData, addExperience, updateExperience, removeExperience } =
+    useResume();
   const { experience } = resumeData;
 
   return (
     <div className="space-y-4 mt-4">
       {experience.map((exp, index) => (
-        <div key={exp.id} className="p-4 border border-border rounded-lg bg-background">
+        <div
+          key={exp.id}
+          className="p-4 border border-border rounded-lg bg-background"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">{exp.position || `Experience ${index + 1}`}</span>
+              <span className="font-medium">
+                {exp.position || `Experience ${index + 1}`}
+              </span>
             </div>
-            <button 
+            <button
               onClick={() => removeExperience(exp.id)}
-              className="text-muted-foreground hover:text-destructive transition-colors"
+              disabled={disabled}
+              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -420,7 +441,10 @@ function ExperienceEditor() {
                 className={inputClass}
                 placeholder="Company name"
                 value={exp.company}
-                onChange={(e) => updateExperience(exp.id, { company: e.target.value })}
+                onChange={(e) =>
+                  updateExperience(exp.id, { company: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -430,9 +454,25 @@ function ExperienceEditor() {
                 className={inputClass}
                 placeholder="Job title"
                 value={exp.position}
-                onChange={(e) => updateExperience(exp.id, { position: e.target.value })}
+                onChange={(e) =>
+                  updateExperience(exp.id, { position: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
+          </div>
+          <div className="mt-4">
+            <label className={labelClass}>Location</label>
+            <input
+              type="text"
+              className={inputClass}
+              placeholder="San Francisco, CA"
+              value={exp.location}
+              onChange={(e) =>
+                updateExperience(exp.id, { location: e.target.value })
+              }
+              disabled={disabled}
+            />
           </div>
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div>
@@ -442,7 +482,10 @@ function ExperienceEditor() {
                 className={inputClass}
                 placeholder="Jan 2020"
                 value={exp.startDate}
-                onChange={(e) => updateExperience(exp.id, { startDate: e.target.value })}
+                onChange={(e) =>
+                  updateExperience(exp.id, { startDate: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -452,8 +495,10 @@ function ExperienceEditor() {
                 className={inputClass}
                 placeholder="Present"
                 value={exp.endDate}
-                onChange={(e) => updateExperience(exp.id, { endDate: e.target.value })}
-                disabled={exp.current}
+                onChange={(e) =>
+                  updateExperience(exp.id, { endDate: e.target.value })
+                }
+                disabled={disabled || exp.current}
               />
             </div>
             <div className="flex items-end">
@@ -462,7 +507,10 @@ function ExperienceEditor() {
                   type="checkbox"
                   className="rounded border-border accent-primary"
                   checked={exp.current}
-                  onChange={(e) => updateExperience(exp.id, { current: e.target.checked })}
+                  onChange={(e) =>
+                    updateExperience(exp.id, { current: e.target.checked })
+                  }
+                  disabled={disabled}
                 />
                 Current
               </label>
@@ -473,21 +521,20 @@ function ExperienceEditor() {
             <textarea
               rows={4}
               className={`${inputClass} resize-none font-mono text-sm`}
-              placeholder="• Led development of new feature...&#10;• Improved performance by 40%...&#10;• Mentored junior engineers..."
+              placeholder={"• Led development of new feature...\n• Improved performance by 40%...\n• Mentored junior engineers..."}
               value={exp.bullets}
-              onChange={(e) => updateExperience(exp.id, { bullets: e.target.value })}
-            />
-            <AIEnhanceButton
-              text={exp.bullets}
-              type="bullets"
-              onEnhanced={(text) => updateExperience(exp.id, { bullets: text })}
+              onChange={(e) =>
+                updateExperience(exp.id, { bullets: e.target.value })
+              }
+              disabled={disabled}
             />
           </div>
         </div>
       ))}
-      <button 
+      <button
         onClick={() => addExperience()}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium"
+        disabled={disabled}
+        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Plus className="w-4 h-4" /> Add Experience
       </button>
@@ -495,22 +542,29 @@ function ExperienceEditor() {
   );
 }
 
-function EducationEditor() {
-  const { resumeData, addEducation, updateEducation, removeEducation } = useResume();
+function EducationEditor({ disabled }: { disabled: boolean }) {
+  const { resumeData, addEducation, updateEducation, removeEducation } =
+    useResume();
   const { education } = resumeData;
 
   return (
     <div className="space-y-4 mt-4">
       {education.map((edu, index) => (
-        <div key={edu.id} className="p-4 border border-border rounded-lg bg-background">
+        <div
+          key={edu.id}
+          className="p-4 border border-border rounded-lg bg-background"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">{edu.institution || `Education ${index + 1}`}</span>
+              <span className="font-medium">
+                {edu.institution || `Education ${index + 1}`}
+              </span>
             </div>
-            <button 
+            <button
               onClick={() => removeEducation(edu.id)}
-              className="text-muted-foreground hover:text-destructive transition-colors"
+              disabled={disabled}
+              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -523,7 +577,10 @@ function EducationEditor() {
                 className={inputClass}
                 placeholder="University name"
                 value={edu.institution}
-                onChange={(e) => updateEducation(edu.id, { institution: e.target.value })}
+                onChange={(e) =>
+                  updateEducation(edu.id, { institution: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -533,7 +590,10 @@ function EducationEditor() {
                 className={inputClass}
                 placeholder="Bachelor of Science"
                 value={edu.degree}
-                onChange={(e) => updateEducation(edu.id, { degree: e.target.value })}
+                onChange={(e) =>
+                  updateEducation(edu.id, { degree: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
           </div>
@@ -545,7 +605,10 @@ function EducationEditor() {
                 className={inputClass}
                 placeholder="Computer Science"
                 value={edu.field}
-                onChange={(e) => updateEducation(edu.id, { field: e.target.value })}
+                onChange={(e) =>
+                  updateEducation(edu.id, { field: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -555,7 +618,10 @@ function EducationEditor() {
                 className={inputClass}
                 placeholder="3.8/4.0"
                 value={edu.gpa}
-                onChange={(e) => updateEducation(edu.id, { gpa: e.target.value })}
+                onChange={(e) =>
+                  updateEducation(edu.id, { gpa: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -565,15 +631,19 @@ function EducationEditor() {
                 className={inputClass}
                 placeholder="May 2022"
                 value={edu.graduationDate}
-                onChange={(e) => updateEducation(edu.id, { graduationDate: e.target.value })}
+                onChange={(e) =>
+                  updateEducation(edu.id, { graduationDate: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
           </div>
         </div>
       ))}
-      <button 
+      <button
         onClick={() => addEducation()}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium"
+        disabled={disabled}
+        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Plus className="w-4 h-4" /> Add Education
       </button>
@@ -581,7 +651,7 @@ function EducationEditor() {
   );
 }
 
-function SkillsEditor() {
+function SkillsEditor({ disabled }: { disabled: boolean }) {
   const { resumeData, updateSkills } = useResume();
   const { skills } = resumeData;
 
@@ -595,6 +665,7 @@ function SkillsEditor() {
           placeholder="JavaScript, TypeScript, React, Node.js, Python"
           value={skills.technical}
           onChange={(e) => updateSkills({ technical: e.target.value })}
+          disabled={disabled}
         />
       </div>
       <div>
@@ -605,6 +676,7 @@ function SkillsEditor() {
           placeholder="Next.js, Express, Tailwind CSS, PostgreSQL"
           value={skills.frameworks}
           onChange={(e) => updateSkills({ frameworks: e.target.value })}
+          disabled={disabled}
         />
       </div>
       <div>
@@ -615,28 +687,35 @@ function SkillsEditor() {
           placeholder="Git, Docker, AWS, Vercel, Figma"
           value={skills.tools}
           onChange={(e) => updateSkills({ tools: e.target.value })}
+          disabled={disabled}
         />
       </div>
     </div>
   );
 }
 
-function ProjectsEditor() {
+function ProjectsEditor({ disabled }: { disabled: boolean }) {
   const { resumeData, addProject, updateProject, removeProject } = useResume();
   const { projects } = resumeData;
 
   return (
     <div className="space-y-4 mt-4">
       {projects.map((proj, index) => (
-        <div key={proj.id} className="p-4 border border-border rounded-lg bg-background">
+        <div
+          key={proj.id}
+          className="p-4 border border-border rounded-lg bg-background"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">{proj.name || `Project ${index + 1}`}</span>
+              <span className="font-medium">
+                {proj.name || `Project ${index + 1}`}
+              </span>
             </div>
-            <button 
+            <button
               onClick={() => removeProject(proj.id)}
-              className="text-muted-foreground hover:text-destructive transition-colors"
+              disabled={disabled}
+              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -649,7 +728,10 @@ function ProjectsEditor() {
                 className={inputClass}
                 placeholder="Project name"
                 value={proj.name}
-                onChange={(e) => updateProject(proj.id, { name: e.target.value })}
+                onChange={(e) =>
+                  updateProject(proj.id, { name: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -659,7 +741,10 @@ function ProjectsEditor() {
                 className={inputClass}
                 placeholder="https://project.com"
                 value={proj.url}
-                onChange={(e) => updateProject(proj.id, { url: e.target.value })}
+                onChange={(e) =>
+                  updateProject(proj.id, { url: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
           </div>
@@ -670,7 +755,10 @@ function ProjectsEditor() {
               className={inputClass}
               placeholder="React, Node.js, PostgreSQL, AWS"
               value={proj.technologies}
-              onChange={(e) => updateProject(proj.id, { technologies: e.target.value })}
+              onChange={(e) =>
+                updateProject(proj.id, { technologies: e.target.value })
+              }
+              disabled={disabled}
             />
           </div>
           <div className="mt-4">
@@ -680,19 +768,18 @@ function ProjectsEditor() {
               className={`${inputClass} resize-none`}
               placeholder="Brief description of the project..."
               value={proj.description}
-              onChange={(e) => updateProject(proj.id, { description: e.target.value })}
-            />
-            <AIEnhanceButton
-              text={proj.description}
-              type="description"
-              onEnhanced={(text) => updateProject(proj.id, { description: text })}
+              onChange={(e) =>
+                updateProject(proj.id, { description: e.target.value })
+              }
+              disabled={disabled}
             />
           </div>
         </div>
       ))}
-      <button 
+      <button
         onClick={() => addProject()}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium"
+        disabled={disabled}
+        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Plus className="w-4 h-4" /> Add Project
       </button>
@@ -700,22 +787,33 @@ function ProjectsEditor() {
   );
 }
 
-function CertificationsEditor() {
-  const { resumeData, addCertification, updateCertification, removeCertification } = useResume();
+function CertificationsEditor({ disabled }: { disabled: boolean }) {
+  const {
+    resumeData,
+    addCertification,
+    updateCertification,
+    removeCertification,
+  } = useResume();
   const { certifications } = resumeData;
 
   return (
     <div className="space-y-4 mt-4">
       {certifications.map((cert, index) => (
-        <div key={cert.id} className="p-4 border border-border rounded-lg bg-background">
+        <div
+          key={cert.id}
+          className="p-4 border border-border rounded-lg bg-background"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">{cert.name || `Certification ${index + 1}`}</span>
+              <span className="font-medium">
+                {cert.name || `Certification ${index + 1}`}
+              </span>
             </div>
-            <button 
+            <button
               onClick={() => removeCertification(cert.id)}
-              className="text-muted-foreground hover:text-destructive transition-colors"
+              disabled={disabled}
+              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -728,7 +826,10 @@ function CertificationsEditor() {
                 className={inputClass}
                 placeholder="Certification name"
                 value={cert.name}
-                onChange={(e) => updateCertification(cert.id, { name: e.target.value })}
+                onChange={(e) =>
+                  updateCertification(cert.id, { name: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -738,7 +839,10 @@ function CertificationsEditor() {
                 className={inputClass}
                 placeholder="Amazon Web Services"
                 value={cert.issuer}
-                onChange={(e) => updateCertification(cert.id, { issuer: e.target.value })}
+                onChange={(e) =>
+                  updateCertification(cert.id, { issuer: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
           </div>
@@ -750,7 +854,10 @@ function CertificationsEditor() {
                 className={inputClass}
                 placeholder="March 2024"
                 value={cert.date}
-                onChange={(e) => updateCertification(cert.id, { date: e.target.value })}
+                onChange={(e) =>
+                  updateCertification(cert.id, { date: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
             <div>
@@ -760,15 +867,19 @@ function CertificationsEditor() {
                 className={inputClass}
                 placeholder="https://..."
                 value={cert.credentialUrl}
-                onChange={(e) => updateCertification(cert.id, { credentialUrl: e.target.value })}
+                onChange={(e) =>
+                  updateCertification(cert.id, { credentialUrl: e.target.value })
+                }
+                disabled={disabled}
               />
             </div>
           </div>
         </div>
       ))}
-      <button 
+      <button
         onClick={() => addCertification()}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium"
+        disabled={disabled}
+        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Plus className="w-4 h-4" /> Add Certification
       </button>
@@ -779,7 +890,9 @@ function CertificationsEditor() {
 export default function ResumeBuilder({ resumeId }: { resumeId?: string }) {
   return (
     <ResumeProvider>
-      <ResumeBuilderContent resumeId={resumeId} />
+      <Suspense>
+        <ResumeBuilderContent resumeId={resumeId} />
+      </Suspense>
     </ResumeProvider>
   );
 }
