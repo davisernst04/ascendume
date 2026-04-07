@@ -93,6 +93,27 @@ function FeatureCard({
   );
 }
 
+const steps = [
+  {
+    num: "1",
+    title: "Upload or start fresh",
+    description:
+      "Import your existing resume or begin from our template.",
+  },
+  {
+    num: "2",
+    title: "Edit and enhance",
+    description:
+      "Use AI to sharpen your bullets, fill in your experience, and fine-tune every detail.",
+  },
+  {
+    num: "3",
+    title: "Export and apply",
+    description:
+      "Download a polished PDF and start sending applications.",
+  },
+];
+
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -239,6 +260,62 @@ export default function LandingPage() {
                 {features.slice(1).map((f) => (
                   <FeatureCard key={f.num} {...f} />
                 ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="py-24 lg:py-32 border-t border-border">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="mb-16"
+            >
+              <SectionLabel>How It Works</SectionLabel>
+              <h2 className="text-5xl lg:text-6xl font-bold tracking-tighter">
+                Three steps to your
+                <br />
+                next job.
+              </h2>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <div className="relative grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+                {/* Dashed connector — desktop only */}
+                <div className="hidden md:block absolute top-9 left-[20%] right-[20%] border-t border-dashed border-border" />
+
+                {steps.map((step, i) => (
+                  <div key={i} className="flex flex-col">
+                    <span className="text-8xl font-bold tracking-tighter leading-none mb-5 text-foreground">
+                      {step.num}
+                    </span>
+                    <h3 className="text-xl font-bold mb-2">{step.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {step.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-16 flex justify-center">
+                <Link href="/auth/sign-in">
+                  <Button
+                    size="lg"
+                    className="h-14 px-10 text-lg font-black shadow-2xl shadow-primary/30 group rounded-xl"
+                  >
+                    Build my resume
+                    <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           </div>
