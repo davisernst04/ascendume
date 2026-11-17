@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth";
 import { headers } from "next/headers";
 import { put } from "@vercel/blob";
 import PDFParser from "pdf2json";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { 
   resumes, 
   personalInfo, 
@@ -67,13 +67,15 @@ const resumeSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({
+    const session = await getServerSession({
       headers: await headers()
     });
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const db = getDb();
 
     const formData = await req.formData();
     const file = formData.get("file") as File;

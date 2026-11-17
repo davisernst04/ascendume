@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Vercel deployment
+
+Deploy the repository root with the Next.js framework preset. `npm run build`
+works without account-storage credentials; the public landing page stays available.
+
+Configure `DATABASE_URL` and `BETTER_AUTH_SECRET` to enable accounts and saved
+résumés. Set `BETTER_AUTH_URL` to the deployment origin. `NEXT_PUBLIC_APP_URL`
+is optional; the browser uses the current origin by default.
+
+Without account configuration, session checks return no session, protected routes
+require sign-in, and account mutations return 503. AI routes need `OPENAI_API_KEY`;
+optional uploads need `BLOB_READ_WRITE_TOKEN`. Schema setup and external services
+are separate from deploying the public site. Keep credentials in Vercel environment
+variables and never commit them.

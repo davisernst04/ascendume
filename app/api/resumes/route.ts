@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getServerSession } from "@/lib/auth";
+import { getDb } from "@/lib/db";
 import { resumes, personalInfo, workExperience, education, skills, projects, certifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Experience, Education, Project, Certification } from "@/lib/resume-context";
@@ -8,10 +8,12 @@ import { Experience, Education, Project, Certification } from "@/lib/resume-cont
 // GET /api/resumes - Get all resumes for the current user
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const session = await getServerSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const db = getDb();
 
     const userResumes = await db.query.resumes.findMany({
       where: eq(resumes.userId, session.user.id),
@@ -36,10 +38,12 @@ export async function GET(request: NextRequest) {
 // POST /api/resumes - Create a new resume
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const session = await getServerSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const db = getDb();
 
     const body = await request.json();
     const { title, personalInfoData, workExperienceData, educationData, skillsData, projectsData, certificationsData } = body;

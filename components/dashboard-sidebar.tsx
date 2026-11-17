@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Plus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth";
 import { headers } from "next/headers";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { resumes } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { SidebarUserButton } from "@/components/sidebar-user-button";
@@ -11,7 +11,7 @@ import { SidebarToggleButton } from "@/components/sidebar-toggle-button";
 import { SidebarResumeDeleteButton } from "@/components/sidebar-resume-delete-button";
 
 export async function DashboardSidebar() {
-  const session = await auth.api.getSession({
+  const session = await getServerSession({
     headers: await headers(),
   });
 
@@ -19,6 +19,7 @@ export async function DashboardSidebar() {
     return null;
   }
 
+  const db = getDb();
   const userResumes = await db.query.resumes.findMany({
     where: eq(resumes.userId, session.user.id),
     orderBy: [desc(resumes.updatedAt)],

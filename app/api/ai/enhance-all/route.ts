@@ -30,6 +30,9 @@ const enhancedSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: "AI enhancement is not available yet" }, { status: 503 });
+  }
   try {
     const data: ResumeData = await req.json();
 

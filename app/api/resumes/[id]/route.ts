@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getServerSession } from "@/lib/auth";
+import { getDb } from "@/lib/db";
 import { resumes, personalInfo, workExperience, education, skills, projects, certifications } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Experience, Education, Project, Certification } from "@/lib/resume-context";
@@ -11,10 +11,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const session = await getServerSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const db = getDb();
 
     const { id } = await params;
 
@@ -47,10 +49,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const session = await getServerSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const db = getDb();
 
     const { id } = await params;
     const body = await request.json();
@@ -195,10 +199,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const session = await getServerSession({ headers: request.headers });
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const db = getDb();
 
     const { id } = await params;
 
