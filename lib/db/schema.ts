@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, varchar, boolean, index, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, varchar, boolean, index, integer, date, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Better Auth Users Table
@@ -155,6 +155,17 @@ export const certifications = pgTable("certifications", {
   order: serial("order"),
 }, (table) => ({
   resumeIdIdx: index("certifications_resume_id_idx").on(table.resumeId),
+}));
+
+// AI usage — one row per user, UTC day and kind; enforces the daily caps in lib/ai/usage.ts
+export const aiUsage = pgTable("ai_usage", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+  kind: varchar("kind", { length: 20 }).notNull(),
+  count: integer("count").notNull().default(0),
+}, (table) => ({
+  userDayKindIdx: uniqueIndex("ai_usage_user_day_kind_idx").on(table.userId, table.day, table.kind),
 }));
 
 // Relations

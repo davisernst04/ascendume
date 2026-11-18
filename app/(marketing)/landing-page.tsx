@@ -13,7 +13,7 @@ import { useState } from "react";
 // because parsing runs on the server.
 const REVIEW_HREF = "/review";
 // Guests can build without an account; the draft stays in their browser.
-const BUILD_HREF = "/new";
+const BUILD_HREF = "/new?guided=1";
 
 const HeroButtons = ({ className }: { className?: string }) => (
   <div className={className}>

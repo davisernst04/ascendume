@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { put } from "@vercel/blob";
 import PDFParser from "pdf2json";
 import { generateText, Output } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { parseModel } from "@/lib/ai/models";
+import { LIMIT_MESSAGES, refundAiUse, takeAiUse } from "@/lib/ai/usage";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { 
@@ -118,16 +119,25 @@ export async function POST(req: NextRequest) {
       blobUrl = blob.url;
     }
 
-    // 3. AI Parsing
-    const { output: object } = await generateText({
-      model: openai('gpt-4o'),
-      output: Output.object({ schema: resumeSchema }),
-      prompt: `Parse the following raw resume text into the structured schema provided. Extract as much detail as possible. Ensure bullets are cleanly formatted with bullet characters or separated by newlines. 
+    // 3. AI Parsing (counts toward the daily import cap; refunded if it fails)
+    if (!(await takeAiUse(session.user.id, "import"))) {
+      return NextResponse.json({ error: LIMIT_MESSAGES.import }, { status: 429 });
+    }
+    let object: z.infer<typeof resumeSchema>;
+    try {
+      ({ output: object } = await generateText({
+        model: parseModel(),
+        output: Output.object({ schema: resumeSchema }),
+        prompt: `Parse the following raw resume text into the structured schema provided. Extract as much detail as possible. Ensure bullets are cleanly formatted with bullet characters or separated by newlines.
       Raw Text:
       ---
       ${rawText}
       ---`,
-    });
+      }));
+    } catch (error) {
+      await refundAiUse(session.user.id, "import");
+      throw error;
+    }
 
     // 4. Save to Database
     const [newResume] = await db.insert(resumes).values({

@@ -18,7 +18,6 @@ import {
   Download,
   FileCode,
   Loader2,
-  Sparkles,
   Eye,
   ClipboardCheck,
 } from "lucide-react";
@@ -34,6 +33,9 @@ import { useReview } from "@/lib/review/use-review";
 import { ReviewPanel } from "@/components/review/review-panel";
 import type { CompileResult } from "@/components/latex-pdf-preview";
 import { cn } from "@/lib/utils";
+import { GuidedDraft } from "@/components/ai/guided-draft";
+import { GuidedStart } from "@/components/ai/guided-start";
+import { appendBullets } from "@/lib/bullet-text";
 import { inputClass, labelClass } from "@/components/builder/form-styles";
 import { SkillsEditor } from "@/components/builder/skills-editor";
 
@@ -87,7 +89,7 @@ const defaultSections: Section[] = [
 ];
 
 function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
-  const { resumeData, setResumeData, updateTitle } = useResume();
+  const { resumeData, updateTitle } = useResume();
   const { isOpen: sidebarOpen } = useSidebar();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -95,7 +97,6 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const tabParam = searchParams.get("tab") as SectionType | null;
   const initialSection = defaultSections.find((s) => s.type === tabParam) ?? defaultSections[0];
 
-  const [enhancing, setEnhancing] = useState(false);
   const [sections, setSections] = useState<Section[]>(
     defaultSections.map((s) => ({ ...s, expanded: s.id === initialSection.id }))
   );
@@ -109,6 +110,8 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const signedIn = Boolean(session?.user);
 
   const [rightPanel, setRightPanel] = useState<"preview" | "review">("preview");
+  // The entry the guided start just added, whose interview opens straight away.
+  const [guidedEntryId, setGuidedEntryId] = useState<string | null>(null);
   const [compiled, setCompiled] = useState<CompileResult | null>(null);
   const review = useReview({ data: resumeData, loaded: isLoaded, compiled, signedIn });
 
@@ -143,25 +146,6 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
     router.replace(query ? `?${query}` : "?");
   }, [isLoaded, searchParams, startReview, router]);
 
-  const handleEnhanceAll = useCallback(async () => {
-    setEnhancing(true);
-    try {
-      const res = await fetch("/api/ai/enhance-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(resumeData),
-      });
-      if (!res.ok) throw new Error("Enhancement failed");
-      const enhanced = await res.json();
-      setResumeData(enhanced);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to enhance resume. Please try again.");
-    } finally {
-      setEnhancing(false);
-    }
-  }, [resumeData, setResumeData]);
-
   const fileBase = toFileName(resumeData.title);
 
   const handleDownload = useCallback(() => {
@@ -191,7 +175,6 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
             onChange={(e) => updateTitle(e.target.value)}
             className="bg-transparent border-none text-sm font-semibold focus:outline-none focus:ring-0 w-36 shrink-0 text-foreground"
             placeholder="Resume title"
-            disabled={enhancing}
           />
           <div className="h-4 w-px bg-border shrink-0 mx-2" />
           {sections.map((section) => {
@@ -200,7 +183,6 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
               <button
                 key={section.id}
                 onClick={() => goToSection(section.type)}
-                disabled={enhancing}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors shrink-0 ${
                   activeSection === section.id
                     ? "bg-primary text-primary-foreground"
@@ -218,38 +200,16 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
               variant="outline"
               className="font-medium rounded-lg gap-2 h-8"
               onClick={startReview}
-              disabled={enhancing || review.status === "running" || review.status === "waiting-for-preview"}
+              disabled={review.status === "running" || review.status === "waiting-for-preview"}
             >
               <ClipboardCheck className="w-3.5 h-3.5" />
               Review my resume
             </Button>
-            {signedIn && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="font-medium rounded-lg gap-2 h-8"
-              onClick={handleEnhanceAll}
-              disabled={enhancing}
-            >
-              {enhancing ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Enhancing…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Enhance with AI
-                </>
-              )}
-            </Button>
-            )}
             <Button
               size="sm"
               variant="outline"
               className="font-medium rounded-lg gap-2 h-8"
               onClick={handleDownloadTex}
-              disabled={enhancing}
               title="Download the LaTeX source to edit in Overleaf or any TeX editor"
             >
               <FileCode className="w-3.5 h-3.5" />
@@ -259,7 +219,6 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
               size="sm"
               className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2 h-8"
               onClick={handleDownload}
-              disabled={enhancing}
             >
               <Download className="w-3.5 h-3.5" />
               PDF
@@ -273,6 +232,15 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
         {/* Center Panel - Editor */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-2xl space-y-6">
+            {isLoaded && (
+              <GuidedStart
+                forceOpen={searchParams.get("guided") === "1"}
+                onStart={(section, entryId) => {
+                  setGuidedEntryId(entryId);
+                  goToSection(section);
+                }}
+              />
+            )}
             {sections
               .filter((s) => s.id === activeSection)
               .map((section) => {
@@ -300,7 +268,8 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
                       <div className="p-4 pt-0 border-t border-border">
                         <SectionEditor
                           type={section.type}
-                          disabled={enhancing}
+                          disabled={false}
+                          openInterviewFor={guidedEntryId}
                         />
                       </div>
                     )}
@@ -401,21 +370,23 @@ function downloadBlob(blob: Blob, filename: string) {
 function SectionEditor({
   type,
   disabled,
+  openInterviewFor,
 }: {
   type: SectionType;
   disabled: boolean;
+  openInterviewFor: string | null;
 }) {
   switch (type) {
     case "personal":
       return <PersonalInfoEditor disabled={disabled} />;
     case "experience":
-      return <ExperienceEditor disabled={disabled} />;
+      return <ExperienceEditor disabled={disabled} openInterviewFor={openInterviewFor} />;
     case "education":
       return <EducationEditor disabled={disabled} />;
     case "skills":
       return <SkillsEditor disabled={disabled} />;
     case "projects":
-      return <ProjectsEditor disabled={disabled} />;
+      return <ProjectsEditor disabled={disabled} openInterviewFor={openInterviewFor} />;
     case "certifications":
       return <CertificationsEditor disabled={disabled} />;
     default:
@@ -528,7 +499,7 @@ function PersonalInfoEditor({ disabled }: { disabled: boolean }) {
   );
 }
 
-function ExperienceEditor({ disabled }: { disabled: boolean }) {
+function ExperienceEditor({ disabled, openInterviewFor }: { disabled: boolean; openInterviewFor: string | null }) {
   const { resumeData, addExperience, updateExperience, removeExperience } =
     useResume();
   const { experience } = resumeData;
@@ -650,6 +621,15 @@ function ExperienceEditor({ disabled }: { disabled: boolean }) {
               }
               disabled={disabled}
             />
+            <div className="mt-2">
+              <GuidedDraft
+                kind="experience"
+                heading={[exp.position, exp.company].filter(Boolean).join(", ")}
+                current={exp.current}
+                initiallyOpen={exp.id === openInterviewFor}
+                onAccept={(bullets) => updateExperience(exp.id, { bullets: appendBullets(exp.bullets, bullets) })}
+              />
+            </div>
           </div>
         </div>
       ))}
@@ -773,7 +753,7 @@ function EducationEditor({ disabled }: { disabled: boolean }) {
   );
 }
 
-function ProjectsEditor({ disabled }: { disabled: boolean }) {
+function ProjectsEditor({ disabled, openInterviewFor }: { disabled: boolean; openInterviewFor: string | null }) {
   const { resumeData, addProject, updateProject, removeProject } = useResume();
   const { projects } = resumeData;
 
@@ -841,17 +821,26 @@ function ProjectsEditor({ disabled }: { disabled: boolean }) {
             />
           </div>
           <div className="mt-4">
-            <label className={labelClass}>Description</label>
+            <label className={labelClass}>Bullet Points</label>
             <textarea
               rows={3}
-              className={`${inputClass} resize-none`}
-              placeholder="Brief description of the project..."
+              className={`${inputClass} resize-none font-mono text-sm`}
+              placeholder={"• Built a course-planning app for 3 dorms...\n• Presented at the spring showcase..."}
               value={proj.description}
               onChange={(e) =>
                 updateProject(proj.id, { description: e.target.value })
               }
               disabled={disabled}
             />
+            <div className="mt-2">
+              <GuidedDraft
+                kind="project"
+                heading={proj.name}
+                current={false}
+                initiallyOpen={proj.id === openInterviewFor}
+                onAccept={(bullets) => updateProject(proj.id, { description: appendBullets(proj.description, bullets) })}
+              />
+            </div>
           </div>
         </div>
       ))}

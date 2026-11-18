@@ -1,5 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 
-// Model choices live here so the plan's split (a stronger model for scoring,
-// a cheaper one for rewrites, milestone 4) is a one-line change.
-export const reviewModel = () => openai("gpt-4o");
+// The plan's split: a stronger model for scoring, a cheaper current mini model
+// for rewrites and for turning uploaded PDFs into fields.
+export const reviewModel = () => openai("gpt-5.5");
+export const rewriteModel = () => openai("gpt-5.4-mini");
+export const parseModel = () => openai("gpt-5.4-mini");

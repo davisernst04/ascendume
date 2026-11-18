@@ -22,7 +22,7 @@ Tests use Node's built-in `node:test` runner through `tsx` (no extra test framew
 ## Environment Variables
 
 Required in `.env.local`:
-- `OPENAI_API_KEY` — for AI enhancement and resume parsing (`gpt-4o`)
+- `OPENAI_API_KEY` — for the AI review, rewrites and resume parsing (models in `lib/ai/models.ts`)
 - `BLOB_READ_WRITE_TOKEN` — Vercel Blob token for storing uploaded resume files
 - `DATABASE_URL` — Neon PostgreSQL connection string
 - `BETTER_AUTH_SECRET` — better-auth secret
@@ -110,7 +110,7 @@ The `app/` directory uses two route groups plus standalone routes:
   - `resumes/[id]/` — get, update (delete-and-recreate for list sections), delete
   - `resumes/parse/` — parse an uploaded PDF (≤ 5 MB, must contain text) into a new resume
   - `review/` — the LLM judgment pass of the review (session required)
-  - `ai/enhance-all/` — rewrites the whole resume in one non-streaming call (session required; slated for removal, see `docs/plans/2026-11-relaunch.md`)
+  - `ai/rewrite/` — the shared rewrite engine: `add-number` (one bullet + the user's answer) and `draft` (interview answers → bullets). Returns proposals only; the client shows a diff to accept or reject
   - `auth/[...all]/` — better-auth catch-all handler
 
 PDF export has no server route: the builder downloads the PDF that `LatexPdfPreview` already compiled in the browser.
@@ -131,6 +131,12 @@ PDF export has no server route: the builder downloads the PDF that `LatexPdfPrev
 The rubric is data in `lib/review/rubric.ts` (id, category, kind, scope, reason). Deterministic criteria run in the browser (`lib/review/deterministic.ts`) for guests too; LLM criteria run in `app/api/review/route.ts`, which drops any finding that isn't for an LLM-kind criterion or doesn't cite a real bullet id (`lib/review/llm.ts`). Bullet ids are `<section>:<entryId>:<index>` from `lib/review/bullets.ts`, computed the same way on both sides.
 
 `lib/review/use-review.ts` holds review state in the builder. A review runs only when asked (button, or `/<id>?review=1` after an upload from `/review`). It waits for `LatexPdfPreview` to report a compile of the current source so the one-page check uses a real page count, and marks itself outdated after any edit — it never re-runs on its own. The preview stays mounted while the review tab is shown for that reason.
+
+### AI rules (no fabrication, caps)
+
+- The AI never invents a claim, number or metric. `lib/ai/rewrite.ts` checks every output with `inventedNumbers` (`lib/ai/fabrication.ts`), retries once, then refuses. Keep that check on any new generation path.
+- Every AI route requires a session and takes a daily use from `lib/ai/usage.ts` (`ai_usage` table, per user and UTC day): 3 reviews, 30 rewrites, 5 imports. Uses are refunded when the AI call fails.
+- Models: `reviewModel` (stronger, scoring), `rewriteModel` and `parseModel` (mini) in `lib/ai/models.ts`.
 
 ### Key Conventions
 

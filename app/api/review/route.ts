@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { getServerSession } from "@/lib/auth";
 import { reviewModel } from "@/lib/ai/models";
+import { LIMIT_MESSAGES, refundAiUse, takeAiUse } from "@/lib/ai/usage";
 import type { ResumeData } from "@/lib/resume-context";
 import { extractBullets } from "@/lib/review/bullets";
 import { buildReviewPrompt, llmReviewSchema, validateLlmFindings } from "@/lib/review/llm";
@@ -51,6 +52,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ findings: [] });
   }
 
+  if (!(await takeAiUse(session.user.id, "review"))) {
+    return NextResponse.json({ error: LIMIT_MESSAGES.review }, { status: 429 });
+  }
+
   try {
     const { output } = await generateText({
       model: reviewModel(),
@@ -59,6 +64,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ findings: validateLlmFindings(output, bullets) });
   } catch (error) {
+    await refundAiUse(session.user.id, "review");
     console.error("Review error:", error);
     return NextResponse.json({ error: "The AI review failed. Try again." }, { status: 500 });
   }

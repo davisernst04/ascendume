@@ -141,11 +141,15 @@ the check-in. If time runs short, drop work below the cut line first.
       is hidden below the `lg` breakpoint, same as the preview.)
 
 ### 4. Fixing and writing
-- [ ] Ask-for-numbers flow on flagged bullets
-- [ ] Guided interview for the build route
-- [ ] Shared rewrite engine with accept/reject diffs. Remove "enhance all"
-- [ ] Daily AI caps in the DB, and the model split (mini for rewrites, stronger
+- [x] Ask-for-numbers flow on flagged bullets
+- [x] Guided interview for the build route
+- [x] Shared rewrite engine with accept/reject diffs. Remove "enhance all"
+- [x] Daily AI caps in the DB, and the model split (mini for rewrites, stronger
       for scoring)
+      (Done 2026-11-18. Models: `gpt-5.5` for scoring, `gpt-5.4-mini` for
+      rewrites and PDF import. Imports got their own cap of 5/day, since
+      parsing also calls the AI. Migration `0003_ai_usage.sql` must be applied
+      before deploying.)
 
 ### 5. Trust and measurement
 - [ ] Privacy note page

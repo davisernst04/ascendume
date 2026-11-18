@@ -126,7 +126,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
 
   const addExperience = (exp?: Partial<Experience>) => {
     const newExp: Experience = {
-      id: Date.now().toString(),
+      id: exp?.id || crypto.randomUUID(),
       company: exp?.company || "",
       position: exp?.position || "",
       location: exp?.location || "",
@@ -211,7 +211,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
 
   const addProject = (proj?: Partial<Project>) => {
     const newProj: Project = {
-      id: Date.now().toString(),
+      id: proj?.id || crypto.randomUUID(),
       name: proj?.name || "",
       url: proj?.url || "",
       technologies: proj?.technologies || "",

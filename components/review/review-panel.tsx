@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { ResumeSection } from "@/lib/review/bullets";
 import type { Finding } from "@/lib/review/findings";
 import { getCriterion } from "@/lib/review/rubric";
+import { NumberPrompt } from "@/components/ai/number-prompt";
 import type { ReviewResult, ReviewStatus } from "@/lib/review/use-review";
 
 interface ReviewPanelProps {
@@ -118,7 +119,7 @@ export function ReviewPanel({ status, result, outdated, signedIn, onRun, onGoTo 
             <section key={c.category} id={`review-${c.category}`} className="space-y-2 scroll-mt-4">
               <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{c.label}</h4>
               {c.findings.map((f, i) => (
-                <FindingCard key={i} finding={f} result={result} onGoTo={onGoTo} />
+                <FindingCard key={i} finding={f} result={result} signedIn={signedIn} onGoTo={onGoTo} />
               ))}
             </section>
           ))}
@@ -141,10 +142,12 @@ export function ReviewPanel({ status, result, outdated, signedIn, onRun, onGoTo 
 function FindingCard({
   finding,
   result,
+  signedIn,
   onGoTo,
 }: {
   finding: Finding;
   result: ReviewResult;
+  signedIn: boolean;
   onGoTo: (section: ResumeSection) => void;
 }) {
   const criterion = getCriterion(finding.criterionId);
@@ -174,6 +177,9 @@ function FindingCard({
       )}
       {where && <p className="text-xs text-muted-foreground">{where}</p>}
       <p className="text-xs text-muted-foreground/80">{criterion.reason}</p>
+      {bullet && finding.criterionId === "impact.measurable" && (
+        <NumberPrompt bullet={bullet} signedIn={signedIn} />
+      )}
     </div>
   );
 }
