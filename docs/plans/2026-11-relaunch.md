@@ -152,9 +152,13 @@ the check-in. If time runs short, drop work below the cut line first.
       before deploying.)
 
 ### 5. Trust and measurement
-- [ ] Privacy note page
-- [ ] Account and data deletion
-- [ ] Analytics events
+- [x] Privacy note page
+- [x] Account and data deletion
+- [x] Analytics events
+      (Done 2026-11-18. Vercel Analytics plus an `analytics_events` table
+      (migration 0004) keyed by a random browser id, so "came back within a
+      week" can be counted. Vercel custom events need a paid plan; the DB
+      counts don't.)
 
 ### 6. Testing
 - [ ] Agent tests with the three personas (see [Agent testing](#agent-testing)).

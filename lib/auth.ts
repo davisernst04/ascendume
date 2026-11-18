@@ -2,6 +2,9 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb } from "./db";
 import { socialProvidersConfig } from "./auth-providers";
+import { eq } from "drizzle-orm";
+import { resumes } from "./db/schema";
+import { deleteUploadedFiles } from "./blob-files";
 
 function createAuth() {
   return betterAuth({
@@ -27,6 +30,19 @@ function createAuth() {
       updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)
     },
     user: {
+      // "Delete my account and data": rows cascade from the user (resumes and
+      // their sections, sessions, accounts, AI usage, analytics events). Uploaded
+      // PDFs are in Blob storage, so they are removed first.
+      deleteUser: {
+        enabled: true,
+        beforeDelete: async (user) => {
+          const rows = await getDb()
+            .select({ url: resumes.originalFileUrl })
+            .from(resumes)
+            .where(eq(resumes.userId, user.id));
+          await deleteUploadedFiles(rows.map((r) => r.url));
+        },
+      },
       additionalFields: {
         role: {
           type: "string",

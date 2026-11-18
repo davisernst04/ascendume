@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Suspense } from "react";
-import { ResumeProvider, useResume } from "@/lib/resume-context";
+import { ResumeProvider, useResume, type ResumeData } from "@/lib/resume-context";
 import { useSidebar } from "@/components/sidebar-context";
 import dynamic from "next/dynamic";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { GuidedDraft } from "@/components/ai/guided-draft";
 import { GuidedStart } from "@/components/ai/guided-start";
 import { appendBullets } from "@/lib/bullet-text";
+import { track } from "@/lib/analytics/track";
 import { inputClass, labelClass } from "@/components/builder/form-styles";
 import { SkillsEditor } from "@/components/builder/skills-editor";
 
@@ -134,6 +135,19 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
     [router, searchParams]
   );
 
+  // resume_started (build): the first edit to a new resume after it has loaded.
+  const startRef = useRef<{ loadedData: ResumeData | null; tracked: boolean }>({ loadedData: null, tracked: false });
+  useEffect(() => {
+    const start = startRef.current;
+    if (resumeId !== "new" || !isLoaded || start.tracked) return;
+    if (start.loadedData === null) {
+      start.loadedData = resumeData;
+    } else if (start.loadedData !== resumeData) {
+      start.tracked = true;
+      track("resume_started", { route: "build" });
+    }
+  }, [resumeId, isLoaded, resumeData]);
+
   // Arriving from the review route (/<id>?review=1): the user asked for a review, so run one once loaded.
   const autoReviewedRef = useRef(false);
   useEffect(() => {
@@ -151,11 +165,13 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const handleDownload = useCallback(() => {
     if (!pdfBlobRef.current) return;
     downloadBlob(pdfBlobRef.current, `${fileBase}.pdf`);
+    track("exported", { format: "pdf" });
   }, [fileBase]);
 
   const handleDownloadTex = useCallback(() => {
     const tex = buildLatex(resumeData);
     downloadBlob(new Blob([tex], { type: "application/x-tex" }), `${fileBase}.tex`);
+    track("exported", { format: "tex" });
   }, [resumeData, fileBase]);
 
   const toggleSection = (id: string) => {

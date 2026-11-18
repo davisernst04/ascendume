@@ -180,6 +180,15 @@ export function AuthForm({ mode, providers, next }: AuthFormProps) {
             </Button>
           </form>
 
+          {isSignUp && (
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              What we store and where your resume text goes:{" "}
+              <Link href="/privacy" className="text-primary hover:underline">
+                privacy note
+              </Link>
+            </p>
+          )}
+
           <div className="mt-4 text-center text-sm">
             {isSignUp ? "Already have an account? " : "Don't have an account? "}
             <Link

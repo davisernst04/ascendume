@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { resumes, personalInfo, workExperience, education, skillCategories, projects, certifications } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { Experience, Education, Project, Certification, SkillCategory } from "@/lib/resume-context";
+import { deleteUploadedFiles } from "@/lib/blob-files";
 
 // GET /api/resumes/[id] - Get a specific resume
 export async function GET(
@@ -214,7 +215,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Resume not found" }, { status: 404 });
     }
 
-    // Delete (cascade will handle related tables)
+    // Delete the uploaded PDF, then the resume (cascade handles related tables)
+    await deleteUploadedFiles([existing.originalFileUrl]);
     await db.delete(resumes).where(eq(resumes.id, id));
 
     return NextResponse.json({ success: true });

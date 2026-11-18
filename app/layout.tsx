@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { Analytics } from "@vercel/analytics/next";
+import { VisitTracker } from "@/components/visit-tracker";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,6 +26,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>{children}</AuthProvider>
+          <VisitTracker />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

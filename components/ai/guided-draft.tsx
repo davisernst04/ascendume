@@ -9,6 +9,7 @@ import { useSession } from "@/lib/auth-client";
 import { INTERVIEW_QUESTIONS, type InterviewAnswers } from "@/lib/ai/questions";
 import { requestDraft } from "@/lib/ai/rewrite-client";
 import { inputClass } from "@/components/builder/form-styles";
+import { track } from "@/lib/analytics/track";
 
 const EMPTY: InterviewAnswers = { role: "", did: "", result: "", tools: "" };
 
@@ -68,7 +69,10 @@ export function GuidedDraft({ kind, heading, current, onAccept, initiallyOpen = 
 
   const take = (i: number, accept: boolean) => {
     if (!proposals) return;
-    if (accept) onAccept([proposals[i]]);
+    if (accept) {
+      onAccept([proposals[i]]);
+      track("rewrite_accepted", {});
+    }
     const rest = proposals.filter((_, j) => j !== i);
     setProposals(rest.length ? rest : null);
     if (!rest.length) {
@@ -101,6 +105,7 @@ export function GuidedDraft({ kind, heading, current, onAccept, initiallyOpen = 
             className="h-7"
             onClick={() => {
               onAccept(proposals);
+              track("rewrite_accepted", {});
               setProposals(null);
               setOpen(false);
               setAnswers(EMPTY);

@@ -9,6 +9,7 @@ import { questionFor } from "@/lib/ai/questions";
 import { requestNumberRewrite } from "@/lib/ai/rewrite-client";
 import type { Bullet } from "@/lib/review/bullets";
 import { useBulletEdits } from "@/lib/use-bullet-edits";
+import { track } from "@/lib/analytics/track";
 
 type Step =
   | { kind: "closed" }
@@ -79,11 +80,14 @@ export function NumberPrompt({ bullet, signedIn }: { bullet: Bullet; signedIn: b
           <Button
             size="sm"
             className="h-7"
-            onClick={() =>
-              applyRewrite(bullet, step.proposal)
-                ? setStep({ kind: "applied" })
-                : setStep({ ...step, error: "This bullet changed since you asked. Run the review again." })
-            }
+            onClick={() => {
+              if (applyRewrite(bullet, step.proposal)) {
+                track("rewrite_accepted", {});
+                setStep({ kind: "applied" });
+              } else {
+                setStep({ ...step, error: "This bullet changed since you asked. Run the review again." });
+              }
+            }}
           >
             Accept
           </Button>

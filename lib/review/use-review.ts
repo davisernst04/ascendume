@@ -8,6 +8,7 @@ import type { Bullet } from "@/lib/review/bullets";
 import { runDeterministicChecks } from "@/lib/review/deterministic";
 import { type CategoryScore, type Finding, scoreReview } from "@/lib/review/findings";
 import { LLM_CRITERION_IDS } from "@/lib/review/rubric";
+import { track } from "@/lib/analytics/track";
 
 /** If the preview hasn't compiled the current resume by then, review without the page count. */
 const COMPILE_WAIT_MS = 15_000;
@@ -52,6 +53,7 @@ export function useReview({ data, loaded, compiled, signedIn }: UseReviewOptions
   const run = useCallback(
     async (pageCount: number | null) => {
       setStatus("running");
+      track("review_run", {});
       const snapshot = snapshotOf(data);
       const det = runDeterministicChecks({ data, pageCount });
       let findings: Finding[] = det.findings;

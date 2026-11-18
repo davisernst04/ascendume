@@ -111,7 +111,8 @@ The `app/` directory uses two route groups plus standalone routes:
   - `resumes/parse/` — parse an uploaded PDF (≤ 5 MB, must contain text) into a new resume
   - `review/` — the LLM judgment pass of the review (session required)
   - `ai/rewrite/` — the shared rewrite engine: `add-number` (one bullet + the user's answer) and `draft` (interview answers → bullets). Returns proposals only; the client shows a diff to accept or reject
-  - `auth/[...all]/` — better-auth catch-all handler
+  - `events/` — first-party analytics counts; accepts only the fixed events in `lib/analytics/events.ts`
+  - `auth/[...all]/` — better-auth catch-all handler (also serves account deletion)
 
 PDF export has no server route: the builder downloads the PDF that `LatexPdfPreview` already compiled in the browser.
 
@@ -137,6 +138,12 @@ The rubric is data in `lib/review/rubric.ts` (id, category, kind, scope, reason)
 - The AI never invents a claim, number or metric. `lib/ai/rewrite.ts` checks every output with `inventedNumbers` (`lib/ai/fabrication.ts`), retries once, then refuses. Keep that check on any new generation path.
 - Every AI route requires a session and takes a daily use from `lib/ai/usage.ts` (`ai_usage` table, per user and UTC day): 3 reviews, 30 rewrites, 5 imports. Uses are refunded when the AI call fails.
 - Models: `reviewModel` (stronger, scoring), `rewriteModel` and `parseModel` (mini) in `lib/ai/models.ts`.
+
+### Privacy, deletion, analytics
+
+- `app/privacy/page.tsx` is the plain-English privacy note. **Update it whenever you change what is stored, what goes to OpenAI, or which third parties load.** It is a promise to users, not boilerplate.
+- Account deletion uses better-auth's `deleteUser` (`lib/auth.ts`). Rows cascade from `user`; uploaded PDFs are deleted from Blob first via `lib/blob-files.ts`. Any new user-owned table needs `onDelete: "cascade"` to `user`, and any new file storage needs cleanup there.
+- Analytics: `track()` from `lib/analytics/track.ts` sends to Vercel Analytics and to `analytics_events`. Only the six events in `lib/analytics/events.ts` exist, with enum-only props — never add a prop that could carry resume text.
 
 ### Key Conventions
 

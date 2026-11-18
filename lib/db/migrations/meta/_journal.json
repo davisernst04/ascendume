@@ -29,6 +29,13 @@
       "when": 1795042775645,
       "tag": "0003_ai_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795044723226,
+      "tag": "0004_analytics_events",
+      "breakpoints": true
     }
   ]
 }

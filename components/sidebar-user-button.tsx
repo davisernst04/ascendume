@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Shield } from "lucide-react";
 import Link from "next/link";
 
 export function SidebarUserButton({ session }: { session: { user: { name: string; email: string; image?: string | null } } }) {
@@ -51,15 +51,15 @@ export function SidebarUserButton({ session }: { session: { user: { name: string
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/" className="cursor-pointer">
+          <Link href="/account" className="cursor-pointer">
             <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+            <span>Account</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/" className="cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+          <Link href="/privacy" className="cursor-pointer">
+            <Shield className="mr-2 h-4 w-4" />
+            <span>Privacy</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

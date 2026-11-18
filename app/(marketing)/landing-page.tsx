@@ -367,9 +367,9 @@ export default function LandingPage() {
                 © 2026 Ascendume.
               </p>
               <div className="flex gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
-                <a href="#" className="hover:text-primary transition-colors">
+                <Link href="/privacy" className="hover:text-primary transition-colors">
                   Privacy
-                </a>
+                </Link>
               </div>
             </div>
           </div>

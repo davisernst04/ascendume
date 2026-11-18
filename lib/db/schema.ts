@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, varchar, boolean, index, integer, date, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, varchar, boolean, index, integer, date, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Better Auth Users Table
@@ -166,6 +166,20 @@ export const aiUsage = pgTable("ai_usage", {
   count: integer("count").notNull().default(0),
 }, (table) => ({
   userDayKindIdx: uniqueIndex("ai_usage_user_day_kind_idx").on(table.userId, table.day, table.kind),
+}));
+
+// Analytics events — the six events in lib/analytics/events.ts. Never resume content.
+// anonymousId is a random id kept in the browser; userId is set when signed in.
+export const analyticsEvents = pgTable("analytics_events", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: varchar("name", { length: 40 }).notNull(),
+  props: jsonb("props").$type<Record<string, string>>().notNull().default({}),
+  anonymousId: varchar("anonymous_id", { length: 64 }).notNull(),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  nameCreatedIdx: index("analytics_events_name_created_idx").on(table.name, table.createdAt),
+  anonymousIdIdx: index("analytics_events_anonymous_id_idx").on(table.anonymousId),
 }));
 
 // Relations

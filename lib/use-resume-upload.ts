@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/analytics/track";
 
 /**
  * Uploads a PDF resume, which the server parses into a new resume, then opens it
@@ -19,12 +20,14 @@ export function useResumeUpload() {
       return;
     }
     setIsUploading(true);
+    track("resume_started", { route: "review" });
     try {
       const formData = new FormData();
       formData.append("file", file);
       const response = await fetch("/api/resumes/parse", { method: "POST", body: formData });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error ?? "We couldn't read that PDF.");
+      track("resume_imported", {});
       router.push(`/${data.resumeId}?review=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "We couldn't read that PDF.");
