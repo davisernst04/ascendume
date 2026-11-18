@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "./auth-client";
 import { useResume, ResumeData, Experience, Education, Project, Certification } from "./resume-context";
@@ -81,6 +81,7 @@ export function useResumePersistence(resumeId?: string) {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const resumeIdRef = useRef<string | null>(resumeId && resumeId !== "new" ? resumeId : null);
   const isInitialLoadRef = useRef(true);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load resume on mount
   useEffect(() => {
@@ -162,7 +163,7 @@ export function useResumePersistence(resumeId?: string) {
       isInitialLoadRef.current = false;
     };
 
-    loadResume();
+    loadResume().finally(() => setIsLoaded(true));
   }, [session?.user, isPending, setResumeData, resumeId]);
 
   // Save resume with debouncing
@@ -238,6 +239,7 @@ export function useResumePersistence(resumeId?: string) {
   }, [resumeData, saveResume]);
 
   return {
-    isSaving: false, // Could track save state if needed
+    /** True once the resume (or the browser draft) has been loaded into the builder. */
+    isLoaded,
   };
 }

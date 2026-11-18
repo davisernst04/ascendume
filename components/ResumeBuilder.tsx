@@ -1,7 +1,7 @@
 // components/ResumeBuilder.tsx
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   User,
@@ -20,6 +20,7 @@ import {
   Loader2,
   Sparkles,
   Eye,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Suspense } from "react";
@@ -29,6 +30,10 @@ import dynamic from "next/dynamic";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
 import { useSession } from "@/lib/auth-client";
 import { buildLatex } from "@/lib/resume-latex";
+import { useReview } from "@/lib/review/use-review";
+import { ReviewPanel } from "@/components/review/review-panel";
+import type { CompileResult } from "@/components/latex-pdf-preview";
+import { cn } from "@/lib/utils";
 import { inputClass, labelClass } from "@/components/builder/form-styles";
 import { SkillsEditor } from "@/components/builder/skills-editor";
 
@@ -99,9 +104,44 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   // Holds the latest generated PDF blob for download
   const pdfBlobRef = useRef<Blob | null>(null);
 
-  useResumePersistence(resumeId);
+  const { isLoaded } = useResumePersistence(resumeId);
   const { data: session } = useSession();
   const signedIn = Boolean(session?.user);
+
+  const [rightPanel, setRightPanel] = useState<"preview" | "review">("preview");
+  const [compiled, setCompiled] = useState<CompileResult | null>(null);
+  const review = useReview({ data: resumeData, loaded: isLoaded, compiled, signedIn });
+
+  const startReview = useCallback(() => {
+    setRightPanel("review");
+    review.request();
+  }, [review]);
+
+  const goToSection = useCallback(
+    (type: SectionType) => {
+      const target = defaultSections.find((s) => s.type === type);
+      if (!target) return;
+      setActiveSection(target.id);
+      setSections((prev) => prev.map((s) => (s.id === target.id ? { ...s, expanded: true } : s)));
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", type);
+      params.delete("review");
+      router.replace(`?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
+
+  // Arriving from the review route (/<id>?review=1): the user asked for a review, so run one once loaded.
+  const autoReviewedRef = useRef(false);
+  useEffect(() => {
+    if (!isLoaded || autoReviewedRef.current || searchParams.get("review") !== "1") return;
+    autoReviewedRef.current = true;
+    startReview();
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("review");
+    const query = params.toString();
+    router.replace(query ? `?${query}` : "?");
+  }, [isLoaded, searchParams, startReview, router]);
 
   const handleEnhanceAll = useCallback(async () => {
     setEnhancing(true);
@@ -159,17 +199,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
             return (
               <button
                 key={section.id}
-                onClick={() => {
-                  setActiveSection(section.id);
-                  setSections((prev) =>
-                    prev.map((s) =>
-                      s.id === section.id ? { ...s, expanded: true } : s
-                    )
-                  );
-                  const params = new URLSearchParams(searchParams.toString());
-                  params.set("tab", section.type);
-                  router.replace(`?${params.toString()}`);
-                }}
+                onClick={() => goToSection(section.type)}
                 disabled={enhancing}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors shrink-0 ${
                   activeSection === section.id
@@ -183,6 +213,16 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
             );
           })}
           <div className="ml-auto flex items-center gap-2 shrink-0 pl-4">
+            <Button
+              size="sm"
+              variant="outline"
+              className="font-medium rounded-lg gap-2 h-8"
+              onClick={startReview}
+              disabled={enhancing || review.status === "running" || review.status === "waiting-for-preview"}
+            >
+              <ClipboardCheck className="w-3.5 h-3.5" />
+              Review my resume
+            </Button>
             {signedIn && (
             <Button
               size="sm"
@@ -270,26 +310,74 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
           </div>
         </div>
 
-        {/* Right Panel - PDF Preview */}
+        {/* Right Panel - Preview / Review */}
         <div className={`overflow-y-auto hidden lg:block shrink-0 transition-all duration-300 ${sidebarOpen ? "w-[420px]" : "w-[612px]"}`}>
           <div className="pl-2 pr-4 py-6">
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-              <div className="flex items-center gap-3 p-4 border-b border-border">
-                <Eye className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold">Live Preview</h3>
+              <div className="flex items-center gap-1 p-2 border-b border-border" role="tablist">
+                <PanelTab active={rightPanel === "preview"} onClick={() => setRightPanel("preview")}>
+                  <Eye className="w-4 h-4" /> Live Preview
+                </PanelTab>
+                <PanelTab active={rightPanel === "review"} onClick={() => setRightPanel("review")}>
+                  <ClipboardCheck className="w-4 h-4" /> Review
+                  {review.result && review.result.findingCount > 0 && (
+                    <span className={cn("ml-1 rounded-full px-1.5 text-xs", review.outdated ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary")}>
+                      {review.result.findingCount}
+                    </span>
+                  )}
+                </PanelTab>
               </div>
-              <div className="p-4">
+              {/* The preview stays mounted while the review is shown: the review needs its page count. */}
+              <div className={cn("p-4", rightPanel !== "preview" && "hidden")}>
                 <LatexPdfPreview
                   data={resumeData}
                   onPdfReady={(blob) => { pdfBlobRef.current = blob; }}
+                  onCompiled={setCompiled}
                   width={sidebarOpen ? 356 : 548}
                 />
               </div>
+              {rightPanel === "review" && (
+                <div className="p-4">
+                  <ReviewPanel
+                    status={review.status}
+                    result={review.result}
+                    outdated={review.outdated}
+                    signedIn={signedIn}
+                    onRun={review.request}
+                    onGoTo={goToSection}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function PanelTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors",
+        active ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
   );
 }
 

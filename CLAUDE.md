@@ -9,6 +9,7 @@ npm run dev          # Start development server
 npm run build        # Production build
 npm run lint         # ESLint (v9)
 npx tsc --noEmit     # Type-check (run after refactoring)
+npm test             # Unit tests: node:test via tsx, files matching lib/**/*.test.ts
 
 # Database (Drizzle + Neon)
 npx drizzle-kit generate   # Generate migrations
@@ -16,7 +17,7 @@ npx drizzle-kit push       # Push schema to DB
 npx drizzle-kit studio     # Open Drizzle Studio
 ```
 
-No test runner is configured — use `npx tsc --noEmit` to validate logic.
+Tests use Node's built-in `node:test` runner through `tsx` (no extra test framework). Pure logic in `lib/` gets tests; run `npx tsc --noEmit` for everything else.
 
 ## Environment Variables
 
@@ -107,7 +108,8 @@ The `app/` directory uses two route groups plus standalone routes:
 - `app/api/` — Route handlers:
   - `resumes/` — list and create resumes
   - `resumes/[id]/` — get, update (delete-and-recreate for list sections), delete
-  - `resumes/parse/` — parse an uploaded PDF resume into a new resume
+  - `resumes/parse/` — parse an uploaded PDF (≤ 5 MB, must contain text) into a new resume
+  - `review/` — the LLM judgment pass of the review (session required)
   - `ai/enhance-all/` — rewrites the whole resume in one non-streaming call (session required; slated for removal, see `docs/plans/2026-11-relaunch.md`)
   - `auth/[...all]/` — better-auth catch-all handler
 
@@ -123,6 +125,12 @@ PDF export has no server route: the builder downloads the PDF that `LatexPdfPrev
 ### Resume State
 
 `lib/resume-context.tsx` provides a React context (`ResumeContext`) with the full resume data shape (`ResumeData`) used throughout the builder. The builder page reads/writes through this context, which syncs to the DB via `lib/use-resume-persistence.ts`.
+
+### Review
+
+The rubric is data in `lib/review/rubric.ts` (id, category, kind, scope, reason). Deterministic criteria run in the browser (`lib/review/deterministic.ts`) for guests too; LLM criteria run in `app/api/review/route.ts`, which drops any finding that isn't for an LLM-kind criterion or doesn't cite a real bullet id (`lib/review/llm.ts`). Bullet ids are `<section>:<entryId>:<index>` from `lib/review/bullets.ts`, computed the same way on both sides.
+
+`lib/review/use-review.ts` holds review state in the builder. A review runs only when asked (button, or `/<id>?review=1` after an upload from `/review`). It waits for `LatexPdfPreview` to report a compile of the current source so the one-page check uses a real page count, and marks itself outdated after any edit — it never re-runs on its own. The preview stays mounted while the review tab is shown for that reason.
 
 ### Key Conventions
 

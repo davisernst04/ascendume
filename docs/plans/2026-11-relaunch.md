@@ -129,12 +129,16 @@ the check-in. If time runs short, drop work below the cut line first.
       show only when their credentials are set.)
 
 ### 3. Review
-- [ ] Rubric module with criteria as data (see [Rubric](#rubric))
-- [ ] Deterministic checks running in the browser
-- [ ] LLM judgment pass that cites bullets
-- [ ] Review panel with category breakdown, findings tied to bullets, the
+- [x] Rubric module with criteria as data (see [Rubric](#rubric))
+- [x] Deterministic checks running in the browser
+- [x] LLM judgment pass that cites bullets
+- [x] Review panel with category breakdown, findings tied to bullets, the
       outdated state, and a "Review my resume" button
-- [ ] Review route: upload → parse → builder → review
+- [x] Review route: upload → parse → builder → review
+      (Done 2026-11-18. Rubric in `lib/review/`, with unit tests (`npm test`).
+      The AI pass uses `gpt-4o` via `lib/ai/models.ts` until milestone 4 sets
+      the model split. The review panel is in the builder's right column, which
+      is hidden below the `lg` breakpoint, same as the preview.)
 
 ### 4. Fixing and writing
 - [ ] Ask-for-numbers flow on flagged bullets

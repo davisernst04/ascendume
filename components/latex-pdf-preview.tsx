@@ -9,9 +9,17 @@ import type { ResumeData } from "@/lib/resume-context";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+export interface CompileResult {
+  /** The exact source that was compiled, so callers can tell whether it matches the current resume. */
+  latex: string;
+  /** Page count, or null if the compile failed. */
+  pages: number | null;
+}
+
 interface Props {
   data: ResumeData;
   onPdfReady?: (blob: Blob) => void;
+  onCompiled?: (result: CompileResult) => void;
   width?: number;
 }
 
@@ -21,12 +29,15 @@ type PreviewState =
   | { type: "ready"; url: string }
   | { type: "error"; message: string };
 
-export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
+export function LatexPdfPreview({ data, onPdfReady, onCompiled, width = 388 }: Props) {
   const workerRef = useRef<Worker | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevUrlRef = useRef<string | null>(null);
   const reqIdRef = useRef(0);
   const onPdfReadyRef = useRef(onPdfReady);
+  const onCompiledRef = useRef(onCompiled);
+  const pendingLatexRef = useRef<string>("");
+  const readyLatexRef = useRef<string>("");
 
   const [state, setState] = useState<PreviewState>({ type: "idle" });
   const [numPages, setNumPages] = useState<number>(0);
@@ -34,7 +45,8 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
   // Keep ref synced with latest callback
   useEffect(() => {
     onPdfReadyRef.current = onPdfReady;
-  }, [onPdfReady]);
+    onCompiledRef.current = onCompiled;
+  }, [onPdfReady, onCompiled]);
 
   // Create the worker once on mount; terminate on unmount
   useEffect(() => {
@@ -55,6 +67,7 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
         const url = URL.createObjectURL(blob);
         if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
         prevUrlRef.current = url;
+        readyLatexRef.current = pendingLatexRef.current;
         setState({ type: "ready", url });
         onPdfReadyRef.current?.(blob);
       } else {
@@ -63,6 +76,7 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
             .split("\n")
             .find((l) => l.startsWith("!")) ?? log ?? "Unknown error";
         setState({ type: "error", message: errorLine });
+        onCompiledRef.current?.({ latex: pendingLatexRef.current, pages: null });
       }
     };
 
@@ -79,8 +93,10 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
     debounceRef.current = setTimeout(() => {
       if (!workerRef.current) return;
       const id = ++reqIdRef.current;
+      const latex = buildLatex(data);
+      pendingLatexRef.current = latex;
       setState({ type: "compiling" });
-      workerRef.current.postMessage({ id, latex: buildLatex(data) });
+      workerRef.current.postMessage({ id, latex });
     }, 1500);
   }, [data]);
 
@@ -109,7 +125,10 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
   return (
     <Document
       file={state.url}
-      onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+      onLoadSuccess={({ numPages }) => {
+        setNumPages(numPages);
+        onCompiledRef.current?.({ latex: readyLatexRef.current, pages: numPages });
+      }}
       loading={null}
       suspense={false}
     >

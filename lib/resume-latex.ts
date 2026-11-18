@@ -24,14 +24,15 @@ function e(s: string | undefined | null): string {
   return escapeLatex(s ?? "");
 }
 
-function sanitizeUrl(raw: string | undefined | null): string {
+export function sanitizeUrl(raw: string | undefined | null): string {
   if (!raw) return "";
   const trimmed = raw.trim();
   if (!/^(https?:\/\/|mailto:)/i.test(trimmed)) return "";
   return trimmed.replace(/[{}\\]/g, "");
 }
 
-function parseBullets(raw: string): string[] {
+/** Splits a newline-separated bullet field into bullet texts, stripping leading •, -, or *. */
+export function parseBullets(raw: string): string[] {
   return raw
     .split("\n")
     .map((l) => l.replace(/^[•\-*]\s*/, "").trim())

@@ -9,10 +9,9 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useState } from "react";
 
-// Uploading needs an account (the parse step runs on the server), so "Review"
-// goes through sign-up to the dashboard's upload for now. Milestone 3 of
-// docs/plans/2026-11-relaunch.md gives it its own route.
-const REVIEW_HREF = "/auth/sign-up?next=/";
+// Upload → parse → builder → review. Guests are sent through sign-up first,
+// because parsing runs on the server.
+const REVIEW_HREF = "/review";
 // Guests can build without an account; the draft stays in their browser.
 const BUILD_HREF = "/new";
 

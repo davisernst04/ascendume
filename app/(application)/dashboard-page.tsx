@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { useResumeUpload } from "@/lib/use-resume-upload";
 import {
   Card,
   CardContent,
@@ -254,44 +255,14 @@ const UploadPreviousAnimation = () => {
 export default function DashboardPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const { upload, isUploading, error } = useResumeUpload();
 
-  const handleScratch = async () => {
-    // Go to /new to initialize the builder
-    router.push("/new");
-  };
+  const handleScratch = () => router.push("/new");
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      // Call our parse endpoint with the file
-      const response = await fetch("/api/resumes/parse", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Failed to parse resume");
-      }
-
-      const { resumeId } = data;
-
-      // Redirect to the builder with the newly populated resume
-      router.push(`/${resumeId}`);
-    } catch (err) {
-      console.error(err);
-      alert("Error uploading and parsing resume.");
-    } finally {
-      setIsUploading(false);
-    }
+    e.target.value = "";
+    if (file) upload(file);
   };
 
   return (
@@ -304,10 +275,10 @@ export default function DashboardPage() {
         >
           <StartFromScratchAnimation />
           <CardHeader className="text-center pb-4 flex-1">
-            <CardTitle className="text-3xl">Start from Scratch</CardTitle>
+            <CardTitle className="text-3xl">Start from scratch</CardTitle>
             <CardDescription className="text-lg mt-3 px-4">
-              Build a professional resume step-by-step using our AI-enhanced
-              builder. Perfect if you are starting fresh.
+              Build your resume section by section, with a live preview in
+              Jake&apos;s template.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center mt-auto pb-8 px-8">
@@ -324,11 +295,16 @@ export default function DashboardPage() {
         >
           <UploadPreviousAnimation />
           <CardHeader className="text-center pb-4 flex-1">
-            <CardTitle className="text-3xl">Upload Previous</CardTitle>
+            <CardTitle className="text-3xl">Review my resume</CardTitle>
             <CardDescription className="text-lg mt-3 px-4">
-              Upload your existing PDF or Word resume. Our AI will instantly
-              parse and upgrade it to our modern format.
+              Upload your resume as a PDF. We&apos;ll import it into the
+              builder and review it, bullet by bullet.
             </CardDescription>
+            {error && (
+              <p role="alert" className="text-sm text-destructive mt-2">
+                {error}
+              </p>
+            )}
           </CardHeader>
           <CardContent className="flex justify-center mt-auto pb-8 px-8">
             <Button
@@ -343,7 +319,7 @@ export default function DashboardPage() {
                   Processing...
                 </>
               ) : (
-                "Select File"
+                "Choose a PDF"
               )}
             </Button>
           </CardContent>
@@ -351,7 +327,7 @@ export default function DashboardPage() {
             type="file"
             className="hidden"
             ref={fileInputRef}
-            accept=".pdf,.docx,.doc"
+            accept=".pdf,application/pdf"
             onChange={handleFileUpload}
           />
         </Card>

@@ -17,8 +17,9 @@ import {
   certifications 
 } from "@/lib/db/schema";
 
-// Disable body parser for file uploads
 export const maxDuration = 60;
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const resumeSchema = z.object({
   personalInfo: z.object({
@@ -73,38 +74,48 @@ export async function POST(req: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "Resume import is not available yet." }, { status: 503 });
+    }
 
     const db = getDb();
 
     const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("file");
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      return NextResponse.json({ error: "Upload a PDF." }, { status: 400 });
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "That PDF is over 5 MB. Export a smaller one and try again." }, { status: 413 });
+    }
 
-    // 1. Upload to Blob (optional — requires BLOB_READ_WRITE_TOKEN)
+    // 1. Extract text
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const rawText = await new Promise<string>((resolve, reject) => {
+      const pdfParser = new PDFParser(undefined, true);
+      pdfParser.on("pdfParser_dataError", (errData: { parserError: Error } | Error) => reject(errData instanceof Error ? errData : errData.parserError));
+      pdfParser.on("pdfParser_dataReady", () => {
+        resolve(pdfParser.getRawTextContent());
+      });
+      pdfParser.parseBuffer(buffer);
+    });
+
+    if (rawText.replace(/-+Page \(\d+\) Break-+/g, "").trim().length < 50) {
+      return NextResponse.json(
+        { error: "We couldn't find any text in that PDF. It may be a scanned image; export it from Word or Google Docs instead." },
+        { status: 422 }
+      );
+    }
+
+    // 2. Keep the original file (optional — requires BLOB_READ_WRITE_TOKEN)
     let blobUrl: string | null = null;
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const blob = await put(file.name, file, { access: 'private', addRandomSuffix: true });
       blobUrl = blob.url;
-    }
-
-    // 2. Extract Text
-    let rawText = "";
-    if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      
-      rawText = await new Promise<string>((resolve, reject) => {
-        const pdfParser = new PDFParser(undefined, true);
-        pdfParser.on("pdfParser_dataError", (errData: { parserError: Error } | Error) => reject(errData instanceof Error ? errData : errData.parserError));
-        pdfParser.on("pdfParser_dataReady", () => {
-          resolve(pdfParser.getRawTextContent());
-        });
-        pdfParser.parseBuffer(buffer);
-      });
-    } else {
-      rawText = await file.text(); 
     }
 
     // 3. AI Parsing
@@ -184,8 +195,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ resumeId: newResume.id });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.error("Parse Error:", error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "We couldn't read that PDF. Try exporting it again." }, { status: 500 });
   }
 }
