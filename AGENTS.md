@@ -5,11 +5,11 @@
 - **UI:** React 19, Tailwind CSS v4, Radix UI, Shadcn UI, `motion` (Framer Motion)
 - **Database:** Drizzle ORM, Neon Serverless Postgres (`@neondatabase/serverless`)
 - **Authentication:** `better-auth`
-- **AI & PDF:** Vercel AI SDK, `@react-pdf/renderer`
+- **AI & PDF:** Vercel AI SDK v7 (`generateText` + `Output.object`), `react-pdf` (preview rendering), `pdf2json` (upload parsing), SwiftLaTeX WASM (PDF compilation)
 
 ## Execution Commands
 - **Type Checking (Run after refactors):** `npx tsc --noEmit`
-- **Linting:** `npm run lint` (ESLint 9)
+- **Linting:** `npm run lint` (ESLint 9; see CLAUDE.md for why it isn't on 10)
 - **Database Migrations:** `npx drizzle-kit generate`
 - **Database Push:** `npx drizzle-kit push`
 - **Drizzle Studio:** `npx drizzle-kit studio`

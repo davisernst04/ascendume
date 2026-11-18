@@ -1,6 +1,6 @@
 // app/api/ai/enhance-all/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { ResumeData } from "@/lib/resume-context";
@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
   try {
     const data: ResumeData = await req.json();
 
-    const { object } = await generateObject({
+    const { output: object } = await generateText({
       model: openai("gpt-4o"),
-      schema: enhancedSchema,
+      output: Output.object({ schema: enhancedSchema }),
       prompt: `You are a professional resume writer. Enhance the following resume content to be more impactful, achievement-oriented, and ATS-friendly.
 
 Rules:

@@ -1,7 +1,8 @@
 import { defineConfig } from "drizzle-kit";
 import * as dotenv from "dotenv";
 
-dotenv.config();
+// Next.js reads .env.local; load it first so drizzle-kit sees the same values.
+dotenv.config({ path: [".env.local", ".env"], quiet: true });
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set");

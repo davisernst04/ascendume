@@ -111,6 +111,7 @@ export function LatexPdfPreview({ data, onPdfReady, width = 388 }: Props) {
       file={state.url}
       onLoadSuccess={({ numPages }) => setNumPages(numPages)}
       loading={null}
+      suspense={false}
     >
       {Array.from({ length: numPages }, (_, i) => (
         <Page

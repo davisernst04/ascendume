@@ -33,10 +33,11 @@ Required in `.env.local`:
 - Always pass `addRandomSuffix: true` to avoid conflicts when the same filename is uploaded more than once
 - `BLOB_READ_WRITE_TOKEN` must be set or the upload step is skipped (the parse route handles this gracefully — `originalFileUrl` is nullable)
 
-### OpenAI Structured Output (`generateObject`)
+### OpenAI Structured Output (`generateText` + `Output.object`)
 - OpenAI's `response_format` structured output requires **every field** in `properties` to appear in `required`
-- Never use `.default(...)` on Zod fields passed to `generateObject` — it makes them optional and removes them from `required`, causing a schema validation error
-- Always use plain `.string()`, `.boolean()`, `.array(...)` etc. with no defaults in schemas passed to `generateObject`
+- Never use `.default(...)` on Zod fields passed to `Output.object` — it makes them optional and removes them from `required`, causing a schema validation error
+- Always use plain `.string()`, `.boolean()`, `.array(...)` etc. with no defaults in schemas passed to `Output.object`
+- `generateObject` is deprecated in AI SDK 7 — use `generateText({ output: Output.object({ schema }) })` and read `result.output`
 
 ### PDF Parsing (`pdf2json` v4)
 - Constructor: `new PDFParser(null, true)` — second arg enables raw text mode
@@ -44,7 +45,15 @@ Required in `.env.local`:
 - These APIs are confirmed working in v4.0.2
 
 ### AI SDK Versions
-- `ai` v6 + `@ai-sdk/openai` v3 are in use — these are the current installed versions, not a mistake
+- `ai` v7 + `@ai-sdk/openai` v4 are in use (Node 22+ required)
+
+### Pinned Below Latest (on purpose)
+- **TypeScript stays on 6.0.x**: `typescript-eslint` (pulled in by `eslint-config-next`) only supports `typescript <6.1`. Revisit TS 7 when it widens its peer range.
+- **ESLint stays on 9**: `eslint-plugin-react`, `eslint-plugin-import` and `eslint-plugin-jsx-a11y` (bundled in `eslint-config-next`) don't declare ESLint 10 support yet.
+- **`@types/node` stays on 24**: it matches the Node 24 LTS runtime, not the local Node.
+
+### react-pdf v11
+- Suspense mode is on by default in v11; `LatexPdfPreview` passes `suspense={false}` to keep its own loading/error UI.
 
 ### LaTeX Live Preview (SwiftLaTeX)
 The live PDF preview compiles LaTeX in the browser using SwiftLaTeX (pdfTeX compiled to WASM).

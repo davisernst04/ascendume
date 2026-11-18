@@ -3,7 +3,7 @@ import { getServerSession } from "@/lib/auth";
 import { headers } from "next/headers";
 import { put } from "@vercel/blob";
 import PDFParser from "pdf2json";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
@@ -109,9 +109,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. AI Parsing
-    const { object } = await generateObject({
+    const { output: object } = await generateText({
       model: openai('gpt-4o'),
-      schema: resumeSchema,
+      output: Output.object({ schema: resumeSchema }),
       prompt: `Parse the following raw resume text into the structured schema provided. Extract as much detail as possible. Ensure bullets are cleanly formatted with bullet characters or separated by newlines. 
       Raw Text:
       ---
