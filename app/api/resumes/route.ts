@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { resumes, personalInfo, workExperience, education, skills, projects, certifications } from "@/lib/db/schema";
+import { resumes, personalInfo, workExperience, education, skillCategories, projects, certifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Experience, Education, Project, Certification } from "@/lib/resume-context";
+import { Experience, Education, Project, Certification, SkillCategory } from "@/lib/resume-context";
 
 // GET /api/resumes - Get all resumes for the current user
 export async function GET(request: NextRequest) {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         personalInfo: true,
         workExperience: true,
         education: true,
-        skills: true,
+        skillCategories: true,
         projects: true,
         certifications: true,
       },
@@ -86,14 +86,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create skills
-    if (skillsData) {
-      await db.insert(skills).values({
-        resumeId: resume.id,
-        ...skillsData,
-      });
-    } else {
-      await db.insert(skills).values({ resumeId: resume.id });
+    // Create skill categories
+    if (Array.isArray(skillsData) && skillsData.length) {
+      await db.insert(skillCategories).values(
+        skillsData.map((cat: SkillCategory, index: number) => ({
+          resumeId: resume.id,
+          label: cat.label ?? "",
+          items: cat.items ?? "",
+          order: index,
+        }))
+      );
     }
 
     // Create projects

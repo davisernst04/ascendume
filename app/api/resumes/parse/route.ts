@@ -12,7 +12,7 @@ import {
   personalInfo, 
   workExperience, 
   education, 
-  skills, 
+  skillCategories,
   projects, 
   certifications 
 } from "@/lib/db/schema";
@@ -46,11 +46,10 @@ const resumeSchema = z.object({
     gpa: z.string(),
     graduationDate: z.string(),
   })),
-  skills: z.object({
-    technical: z.string(),
-    frameworks: z.string(),
-    tools: z.string(),
-  }),
+  skills: z.array(z.object({
+    label: z.string().describe("Category label exactly as the resume names it, e.g. 'Languages' or 'Lab Techniques'. Empty string if the resume lists skills without a label."),
+    items: z.string().describe("Comma-separated skills in this category"),
+  })),
   projects: z.array(z.object({
     name: z.string(),
     url: z.string(),
@@ -152,10 +151,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await db.insert(skills).values({
-      resumeId: newResume.id,
-      ...object.skills
-    });
+    if (object.skills.length > 0) {
+      await db.insert(skillCategories).values(
+        object.skills.map((cat, i) => ({
+          resumeId: newResume.id,
+          label: cat.label,
+          items: cat.items,
+          order: i,
+        }))
+      );
+    }
 
     if (object.projects.length > 0) {
       await db.insert(projects).values(

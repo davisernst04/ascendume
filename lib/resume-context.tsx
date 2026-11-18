@@ -1,6 +1,13 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  type SkillCategory,
+  defaultSkillCategories,
+  newSkillCategory,
+} from "@/lib/skill-categories";
+
+export type { SkillCategory };
 
 export interface PersonalInfo {
   fullName: string;
@@ -49,24 +56,18 @@ export interface Certification {
   credentialUrl: string;
 }
 
-export interface Skills {
-  technical: string;
-  frameworks: string;
-  tools: string;
-}
-
 export interface ResumeData {
   id?: string;
   title: string;
   personalInfo: PersonalInfo;
   experience: Experience[];
   education: Education[];
-  skills: Skills;
+  skills: SkillCategory[];
   projects: Project[];
   certifications: Certification[];
 }
 
-const defaultResumeData: ResumeData = {
+const createDefaultResumeData = (): ResumeData => ({
   title: "My Resume",
   personalInfo: {
     fullName: "",
@@ -80,14 +81,10 @@ const defaultResumeData: ResumeData = {
   },
   experience: [],
   education: [],
-  skills: {
-    technical: "",
-    frameworks: "",
-    tools: "",
-  },
+  skills: defaultSkillCategories(),
   projects: [],
   certifications: [],
-};
+});
 
 interface ResumeContextType {
   resumeData: ResumeData;
@@ -100,7 +97,9 @@ interface ResumeContextType {
   addEducation: (edu?: Partial<Education>) => void;
   updateEducation: (id: string, edu: Partial<Education>) => void;
   removeEducation: (id: string) => void;
-  updateSkills: (skills: Partial<Skills>) => void;
+  addSkillCategory: (category?: Partial<SkillCategory>) => void;
+  updateSkillCategory: (id: string, category: Partial<SkillCategory>) => void;
+  removeSkillCategory: (id: string) => void;
   addProject: (proj?: Partial<Project>) => void;
   updateProject: (id: string, proj: Partial<Project>) => void;
   removeProject: (id: string) => void;
@@ -112,7 +111,7 @@ interface ResumeContextType {
 const ResumeContext = createContext<ResumeContextType | undefined>(undefined);
 
 export function ResumeProvider({ children }: { children: ReactNode }) {
-  const [resumeData, setResumeData] = useState<ResumeData>(defaultResumeData);
+  const [resumeData, setResumeData] = useState<ResumeData>(createDefaultResumeData);
 
   const updateTitle = (title: string) => {
     setResumeData((prev) => ({ ...prev, title }));
@@ -189,10 +188,24 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const updateSkills = (skills: Partial<Skills>) => {
+  const addSkillCategory = (category?: Partial<SkillCategory>) => {
     setResumeData((prev) => ({
       ...prev,
-      skills: { ...prev.skills, ...skills },
+      skills: [...prev.skills, newSkillCategory(category)],
+    }));
+  };
+
+  const updateSkillCategory = (id: string, category: Partial<SkillCategory>) => {
+    setResumeData((prev) => ({
+      ...prev,
+      skills: prev.skills.map((c) => (c.id === id ? { ...c, ...category } : c)),
+    }));
+  };
+
+  const removeSkillCategory = (id: string) => {
+    setResumeData((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((c) => c.id !== id),
     }));
   };
 
@@ -269,7 +282,9 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
         addEducation,
         updateEducation,
         removeEducation,
-        updateSkills,
+        addSkillCategory,
+        updateSkillCategory,
+        removeSkillCategory,
         addProject,
         updateProject,
         removeProject,

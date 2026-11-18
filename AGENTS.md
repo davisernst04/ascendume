@@ -21,8 +21,8 @@
 - **App Router:** `app/` is strictly for routes, layouts, and pages. Default to Server Components.
 - **Client Components:** Use `"use client";` only when necessary (e.g. state, effects, interactions).
 - **API Routes:** Use `app/api/.../route.ts` with Next.js App Router signatures.
-- **Components:** Place in `components/`. Use `PascalCase` filenames.
-- **Database Schema:** Defined in `db/schema.ts` (or `db/` equivalent). Prefer Drizzle's relational queries.
+- **Components:** Place in `components/`. Use kebab-case filenames (`components/ResumeBuilder.tsx` is the one older exception). Builder sub-editors live in `components/builder/`.
+- **Database Schema:** Defined in `lib/db/schema.ts`, migrations in `lib/db/migrations/`. Prefer Drizzle's relational queries.
 - **Styling:** Use Tailwind v4 directly in `className`. Use `cn()` from `@/lib/utils` for conditional classes. Prefer Shadcn UI primitives.
 - **Imports:** Use absolute imports (`@/components/...`, `@/lib/...`). Group imports: React/Next, third-party, internal aliases, relative paths.
 

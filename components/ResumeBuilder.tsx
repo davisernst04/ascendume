@@ -26,6 +26,8 @@ import { ResumeProvider, useResume } from "@/lib/resume-context";
 import { useSidebar } from "@/components/sidebar-context";
 import dynamic from "next/dynamic";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
+import { inputClass, labelClass } from "@/components/builder/form-styles";
+import { SkillsEditor } from "@/components/builder/skills-editor";
 
 const LatexPdfPreview = dynamic(
   () => import("./latex-pdf-preview").then((m) => m.LatexPdfPreview),
@@ -298,9 +300,6 @@ function SectionEditor({
   }
 }
 
-const inputClass =
-  "w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-const labelClass = "block text-sm font-medium mb-1.5 text-foreground";
 
 function PersonalInfoEditor({ disabled }: { disabled: boolean }) {
   const { resumeData, updatePersonalInfo } = useResume();
@@ -647,49 +646,6 @@ function EducationEditor({ disabled }: { disabled: boolean }) {
       >
         <Plus className="w-4 h-4" /> Add Education
       </button>
-    </div>
-  );
-}
-
-function SkillsEditor({ disabled }: { disabled: boolean }) {
-  const { resumeData, updateSkills } = useResume();
-  const { skills } = resumeData;
-
-  return (
-    <div className="space-y-4 mt-4">
-      <div>
-        <label className={labelClass}>Technical Skills</label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="JavaScript, TypeScript, React, Node.js, Python"
-          value={skills.technical}
-          onChange={(e) => updateSkills({ technical: e.target.value })}
-          disabled={disabled}
-        />
-      </div>
-      <div>
-        <label className={labelClass}>Frameworks & Libraries</label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="Next.js, Express, Tailwind CSS, PostgreSQL"
-          value={skills.frameworks}
-          onChange={(e) => updateSkills({ frameworks: e.target.value })}
-          disabled={disabled}
-        />
-      </div>
-      <div>
-        <label className={labelClass}>Tools & Platforms</label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="Git, Docker, AWS, Vercel, Figma"
-          value={skills.tools}
-          onChange={(e) => updateSkills({ tools: e.target.value })}
-          disabled={disabled}
-        />
-      </div>
     </div>
   );
 }

@@ -153,26 +153,20 @@ ${bulletBlock}`;
     \\resumeSubHeadingListEnd
 `;
 
-  // Skills
-  const skillLines: string[] = [];
-  if (data.skills.technical)
-    skillLines.push(
-      `     \\textbf{Languages}{: ${e(data.skills.technical)}} \\\\`
-    );
-  if (data.skills.frameworks)
-    skillLines.push(
-      `     \\textbf{Frameworks}{: ${e(data.skills.frameworks)}} \\\\`
-    );
-  if (data.skills.tools)
-    skillLines.push(
-      `     \\textbf{Developer Tools}{: ${e(data.skills.tools)}} \\\\`
+  // Skills — one `Label: items` row per category the user named
+  const skillLines = data.skills
+    .filter((c) => c.items.trim() !== "")
+    .map((c) =>
+      c.label.trim()
+        ? `     \\textbf{${e(c.label.trim())}}{: ${e(c.items.trim())}} \\\\`
+        : `     ${e(c.items.trim())} \\\\`
     );
   const skillsSection =
     skillLines.length === 0
       ? ""
       : `
-%-----------TECHNICAL SKILLS-----------
-\\section{Technical Skills}
+%-----------SKILLS-----------
+\\section{Skills}
  \\begin{itemize}[leftmargin=0.15in, label={}]
     \\small{\\item{
 ${skillLines.join("\n")}

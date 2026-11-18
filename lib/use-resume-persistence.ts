@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "./auth-client";
 import { useResume, ResumeData, Experience, Education, Project, Certification } from "./resume-context";
+import { normalizeSkillCategories } from "./skill-categories";
 
 const STORAGE_KEY = "ascendume_resume_draft";
 const DEBOUNCE_MS = 1000;
@@ -40,10 +41,10 @@ interface DbEducation {
   graduationDate?: string;
 }
 
-interface DbSkills {
-  technical?: string;
-  frameworks?: string;
-  tools?: string;
+interface DbSkillCategory {
+  id: string;
+  label?: string;
+  items?: string;
 }
 
 interface DbProject {
@@ -68,7 +69,7 @@ interface DbResume {
   personalInfo?: DbPersonalInfo | null;
   workExperience?: DbWorkExperience[];
   education?: DbEducation[];
-  skills?: DbSkills | null;
+  skillCategories?: DbSkillCategory[];
   projects?: DbProject[];
   certifications?: DbCertification[];
 }
@@ -130,11 +131,7 @@ export function useResumePersistence(resumeId?: string) {
                 gpa: edu.gpa || "",
                 graduationDate: edu.graduationDate || "",
               })),
-              skills: {
-                technical: resume.skills?.technical || "",
-                frameworks: resume.skills?.frameworks || "",
-                tools: resume.skills?.tools || "",
-              },
+              skills: normalizeSkillCategories(resume.skillCategories ?? []),
               projects: (resume.projects || []).map((proj: DbProject): Project => ({
                 id: proj.id,
                 name: proj.name || "",
@@ -164,7 +161,7 @@ export function useResumePersistence(resumeId?: string) {
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
-            setResumeData(parsed);
+            setResumeData({ ...parsed, skills: normalizeSkillCategories(parsed.skills) });
           } catch (e) {
             console.error("Error parsing saved resume:", e);
           }

@@ -4,6 +4,7 @@ import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { ResumeData } from "@/lib/resume-context";
+import { getServerSession } from "@/lib/auth";
 
 export const maxDuration = 60;
 
@@ -29,7 +30,12 @@ const enhancedSchema = z.object({
   ),
 });
 
+// Replaced by the shared rewrite engine in milestone 4 of docs/plans/2026-11-relaunch.md.
 export async function POST(req: NextRequest) {
+  const session = await getServerSession({ headers: req.headers });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: "AI enhancement is not available yet" }, { status: 503 });
   }
