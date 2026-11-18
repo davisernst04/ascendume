@@ -25,6 +25,13 @@ Required in `.env.local`:
 - `BLOB_READ_WRITE_TOKEN` — Vercel Blob token for storing uploaded resume files
 - `DATABASE_URL` — Neon PostgreSQL connection string
 - `BETTER_AUTH_SECRET` — better-auth secret
+- `BETTER_AUTH_URL` — public base URL (e.g. `https://your-app.vercel.app`); OAuth redirect URIs are built from it
+
+Optional — each OAuth provider appears on the sign-in page only when both of its values are set
+(`lib/auth-providers.ts`). Register the redirect URI `<BETTER_AUTH_URL>/api/auth/callback/<provider>`:
+- `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` — Entra app registered for "personal Microsoft accounts and any organizational directory" (tenant `common`)
 
 ## Known Constraints & Gotchas
 
@@ -93,7 +100,9 @@ The `app/` directory uses two route groups plus standalone routes:
 - `app/(application)/` — Dashboard (authenticated); page components live here as `-page.tsx` files rather than in `page.tsx` directly
 - `app/(application)/[id]/` — Resume builder for an existing resume (URL: `/<id>`)
 - `app/(application)/new/` — Resume builder for a new resume (URL: `/new`)
-- `app/(application)/layout.tsx` — Auth-guarded layout: redirects unauthenticated users to `/auth/sign-in`, wraps builder routes with `DashboardLayoutClient` + `DashboardSidebar`
+- `app/(application)/layout.tsx` — Signed-in users get `DashboardLayoutClient` + `DashboardSidebar`; guests get `GuestLayout` (no sidebar). `/new` works for guests; `/[id]` redirects guests to sign-in itself
+- Guest drafts live in `localStorage` (`lib/resume-draft.ts`). When a signed-in user opens `/new` with a draft present, the first autosave creates the resume in their account and clears the draft — that is how work carries over after sign-up or sign-in
+- Auth pages take `?next=<path>` (validated by `lib/safe-redirect.ts`) to return users where they were
 - `app/auth/sign-in/` and `app/auth/sign-up/` — Auth pages
 - `app/api/` — Route handlers:
   - `resumes/` — list and create resumes

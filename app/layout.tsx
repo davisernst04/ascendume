@@ -4,9 +4,9 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ascendume - AI-Powered Resume Builder",
+  title: "Ascendume - Free resume review and builder",
   description:
-    "Build your perfect resume in minutes with AI-powered resume optimization and ATS-friendly templates.",
+    "A free resume builder and reviewer for students and new grads. Specific feedback tied to your bullets, and an AI that never makes up numbers.",
 };
 
 export default function RootLayout({

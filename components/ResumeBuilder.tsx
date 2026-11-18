@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  FileCode,
   Loader2,
   Sparkles,
   Eye,
@@ -26,6 +27,8 @@ import { ResumeProvider, useResume } from "@/lib/resume-context";
 import { useSidebar } from "@/components/sidebar-context";
 import dynamic from "next/dynamic";
 import { useResumePersistence } from "@/lib/use-resume-persistence";
+import { useSession } from "@/lib/auth-client";
+import { buildLatex } from "@/lib/resume-latex";
 import { inputClass, labelClass } from "@/components/builder/form-styles";
 import { SkillsEditor } from "@/components/builder/skills-editor";
 
@@ -97,6 +100,8 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const pdfBlobRef = useRef<Blob | null>(null);
 
   useResumePersistence(resumeId);
+  const { data: session } = useSession();
+  const signedIn = Boolean(session?.user);
 
   const handleEnhanceAll = useCallback(async () => {
     setEnhancing(true);
@@ -117,17 +122,17 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
     }
   }, [resumeData, setResumeData]);
 
+  const fileBase = toFileName(resumeData.title);
+
   const handleDownload = useCallback(() => {
     if (!pdfBlobRef.current) return;
-    const url = URL.createObjectURL(pdfBlobRef.current);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${resumeData.title || "resume"}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [resumeData.title]);
+    downloadBlob(pdfBlobRef.current, `${fileBase}.pdf`);
+  }, [fileBase]);
+
+  const handleDownloadTex = useCallback(() => {
+    const tex = buildLatex(resumeData);
+    downloadBlob(new Blob([tex], { type: "application/x-tex" }), `${fileBase}.tex`);
+  }, [resumeData, fileBase]);
 
   const toggleSection = (id: string) => {
     setSections(
@@ -178,6 +183,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
             );
           })}
           <div className="ml-auto flex items-center gap-2 shrink-0 pl-4">
+            {signedIn && (
             <Button
               size="sm"
               variant="outline"
@@ -197,6 +203,18 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
                 </>
               )}
             </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="font-medium rounded-lg gap-2 h-8"
+              onClick={handleDownloadTex}
+              disabled={enhancing}
+              title="Download the LaTeX source to edit in Overleaf or any TeX editor"
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              .tex
+            </Button>
             <Button
               size="sm"
               className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2 h-8"
@@ -204,7 +222,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
               disabled={enhancing}
             >
               <Download className="w-3.5 h-3.5" />
-              Download PDF
+              PDF
             </Button>
           </div>
         </div>
@@ -273,6 +291,23 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
       </div>
     </div>
   );
+}
+
+/** "Jane's Resume (v2)" -> "Janes-Resume-v2"; never empty. */
+function toFileName(title: string): string {
+  const base = title.trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+  return base || "resume";
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function SectionEditor({

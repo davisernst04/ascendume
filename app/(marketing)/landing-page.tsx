@@ -9,15 +9,31 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useState } from "react";
 
+// Uploading needs an account (the parse step runs on the server), so "Review"
+// goes through sign-up to the dashboard's upload for now. Milestone 3 of
+// docs/plans/2026-11-relaunch.md gives it its own route.
+const REVIEW_HREF = "/auth/sign-up?next=/";
+// Guests can build without an account; the draft stays in their browser.
+const BUILD_HREF = "/new";
+
 const HeroButtons = ({ className }: { className?: string }) => (
   <div className={className}>
-    <Link href="/auth/sign-in" className="w-full">
+    <Link href={REVIEW_HREF} className="w-full sm:w-auto">
       <Button
         size="lg"
         className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full"
       >
-        Start
-        <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
+        Review my resume
+        <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-1" />
+      </Button>
+    </Link>
+    <Link href={BUILD_HREF} className="w-full sm:w-auto">
+      <Button
+        size="lg"
+        variant="outline"
+        className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-bold rounded-xl w-full"
+      >
+        Build one with AI
       </Button>
     </Link>
   </div>
@@ -59,27 +75,27 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const features = [
   {
     num: "01",
-    title: "AI Bullet Enhancement",
+    title: "A review you can act on",
     description:
-      "Rewrites your bullet points to be stronger, more impactful, and ATS-optimized — so your experience speaks for itself.",
+      "Findings tied to the exact bullet they're about, grouped by impact, language, clarity and length. There's a score, but the fixes come first.",
   },
   {
     num: "02",
-    title: "Live LaTeX Preview",
+    title: "No made-up numbers",
     description:
-      "See your resume render in real-time as you type. No refreshing, no guessing.",
+      "When a bullet has no measurable result, we ask you for one. The AI never invents a claim or a metric, and you accept or reject every rewrite.",
   },
   {
     num: "03",
-    title: "One-Click PDF Export",
+    title: "A guided start",
     description:
-      "Download a pixel-perfect PDF instantly, ready to send to any employer.",
+      "No resume yet? Answer plain questions about your classes, projects, hackathons, clubs and jobs, and get a first draft built from your answers.",
   },
   {
     num: "04",
-    title: "Smart Resume Parser",
+    title: "PDF and LaTeX",
     description:
-      "Upload an existing resume and we'll import your content automatically.",
+      "Jake's resume template, rendered live as you type. Download the PDF, or the .tex source to keep editing anywhere.",
   },
 ];
 
@@ -117,18 +133,18 @@ const steps = [
   {
     num: "1",
     title: "Upload or start fresh",
-    description: "Import your existing resume or begin from our template.",
+    description: "Upload a PDF to get it reviewed, or answer a few questions to build one.",
   },
   {
     num: "2",
-    title: "Edit and enhance",
+    title: "Fix what matters",
     description:
-      "Use AI to sharpen your bullets, fill in your experience, and fine-tune every detail.",
+      "Work through the findings bullet by bullet, adding the numbers only you know.",
   },
   {
     num: "3",
     title: "Export and apply",
-    description: "Download a polished PDF and start sending applications.",
+    description: "Download a one-page PDF and start sending applications.",
   },
 ];
 
@@ -164,12 +180,12 @@ export default function LandingPage() {
                 Sign In
               </Button>
             </Link>
-            <Link href="/auth/sign-in">
+            <Link href={BUILD_HREF}>
               <Button
                 size="sm"
                 className="font-bold shadow-lg shadow-primary/20 rounded-xl"
               >
-                Get Started
+                Start building
               </Button>
             </Link>
           </div>
@@ -201,9 +217,9 @@ export default function LandingPage() {
                     Sign In
                   </Button>
                 </Link>
-                <Link href="/auth/sign-in">
+                <Link href={BUILD_HREF}>
                   <Button className="w-full font-black h-12 rounded-xl">
-                    Get Started
+                    Start building
                   </Button>
                 </Link>
               </div>
@@ -233,6 +249,12 @@ export default function LandingPage() {
             >
               {/* Desktop Headline - Hidden on mobile */}
               <Headline className="hidden lg:block" />
+
+              <p className="mt-6 lg:mt-8 text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0">
+                A free resume builder and reviewer for students and new grads,
+                in any field. Get specific feedback on the resume you have, or
+                build one from scratch.
+              </p>
 
               <div className="max-w-none mx-auto lg:mx-0">
                 <HeroButtons className="mt-2 lg:mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start w-full" />
@@ -324,19 +346,9 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <div className="mt-16 flex justify-center">
-                <Link href="/auth/sign-in">
-                  <Button
-                    size="lg"
-                    className="h-14 px-10 text-lg font-black shadow-2xl shadow-primary/30 group rounded-xl"
-                  >
-                    Build my resume
-                    <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
-              </div>
+              <HeroButtons className="mt-16 flex flex-col sm:flex-row gap-4 justify-center" />
               <p className="text-center text-sm text-muted-foreground mt-6">
-                Free. No plans, no credit card.
+                Free. No plans, no credit card. Start building without an account.
               </p>
             </motion.div>
           </div>

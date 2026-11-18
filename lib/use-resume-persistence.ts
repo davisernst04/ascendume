@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useSession } from "./auth-client";
 import { useResume, ResumeData, Experience, Education, Project, Certification } from "./resume-context";
 import { normalizeSkillCategories } from "./skill-categories";
+import { clearDraft, readDraft, writeDraft } from "./resume-draft";
 
-const STORAGE_KEY = "ascendume_resume_draft";
 const DEBOUNCE_MS = 1000;
 
 // Database query result types
@@ -88,6 +88,10 @@ export function useResumePersistence(resumeId?: string) {
 
     const loadResume = async () => {
       if (resumeId === "new") {
+        // A guest's browser draft. When the user is signed in, setting it here
+        // triggers the first save, which creates the resume in their account.
+        const draft = readDraft();
+        if (draft) setResumeData(draft);
         isInitialLoadRef.current = false;
         return;
       }
@@ -155,18 +159,6 @@ export function useResumePersistence(resumeId?: string) {
         }
       }
 
-      // Fall back to localStorage only if no ID
-      if (!resumeId) {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            setResumeData({ ...parsed, skills: normalizeSkillCategories(parsed.skills) });
-          } catch (e) {
-            console.error("Error parsing saved resume:", e);
-          }
-        }
-      }
       isInitialLoadRef.current = false;
     };
 
@@ -212,6 +204,7 @@ export function useResumePersistence(resumeId?: string) {
           });
           if (response.ok) {
             const resume = await response.json();
+            clearDraft(); // the draft now lives in the account
             resumeIdRef.current = resume.id;
             setResumeData({ ...data, id: resume.id });
             router.replace(`/${resume.id}`);
@@ -221,8 +214,7 @@ export function useResumePersistence(resumeId?: string) {
         console.error("Error saving resume to database:", error);
       }
     } else {
-      // Save to localStorage
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      writeDraft(data);
     }
   }, [session?.user, setResumeData, router]);
 

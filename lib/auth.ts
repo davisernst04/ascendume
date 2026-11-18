@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb } from "./db";
+import { socialProvidersConfig } from "./auth-providers";
 
 function createAuth() {
   return betterAuth({
@@ -10,6 +11,16 @@ function createAuth() {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false, // Can enable later
+    },
+    socialProviders: socialProvidersConfig(),
+    account: {
+      accountLinking: {
+        enabled: true,
+        // Google and GitHub only return verified emails, so signing in with one
+        // links to an existing account with the same email. Microsoft is left out:
+        // work/school tenants can return an email the user doesn't own.
+        trustedProviders: ["google", "github"],
+      },
     },
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7 days

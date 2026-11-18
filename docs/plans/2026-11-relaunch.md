@@ -118,12 +118,15 @@ the check-in. If time runs short, drop work below the cut line first.
       `components/builder/`.)
 
 ### 2. Open the door
-- [ ] Guest mode: `/new` works without an account, with the draft kept in the
+- [x] Guest mode: `/new` works without an account, with the draft kept in the
       browser and carried over on sign-up
-- [ ] `.tex` export (download the generated source)
-- [ ] GitHub, Google, and Microsoft OAuth through better-auth, with email
+- [x] `.tex` export (download the generated source)
+- [x] GitHub, Google, and Microsoft OAuth through better-auth, with email
       kept as the fallback
-- [ ] Landing page with two CTAs and the broader copy
+- [x] Landing page with two CTAs and the broader copy
+      (Done 2026-11-18. "Review my resume" goes through sign-up to the
+      dashboard upload until milestone 3 adds the review route. OAuth providers
+      show only when their credentials are set.)
 
 ### 3. Review
 - [ ] Rubric module with criteria as data (see [Rubric](#rubric))
