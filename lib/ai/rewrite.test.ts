@@ -45,3 +45,47 @@ test("number questions are targeted to the bullet", () => {
   assert.match(questionFor("Optimized the image pipeline"), /how much|%/i);
   assert.match(questionFor("Built a Discord bot for course announcements"), /people|users/);
 });
+
+test("import check: rewritten bullets are caught, wrapped and hyphenated ones are not", async () => {
+  const { alteredBullets, importInventedNumbers } = await import("@/lib/resume-import");
+  const source = "• Migrate 14 legacy cron jobs to a queued worker\nsystem using Redis\n• Built a dash-\nboard in React";
+  assert.deepEqual(alteredBullets(["Migrate 14 legacy cron jobs to a queued worker system using Redis", "Built a dashboard in React"], source), []);
+  assert.deepEqual(alteredBullets(["Migrated 14 legacy cron jobs to a queued worker system using Redis."], source), [
+    "Migrated 14 legacy cron jobs to a queued worker system using Redis.",
+  ]);
+  assert.deepEqual(importInventedNumbers(["Cut costs 30%", "Migrate 14 jobs"], source), ["30"]);
+});
+
+test("pdf layout: two columns are read one after the other; one column stays in line order", async () => {
+  const { layoutPage, findGutter } = await import("@/lib/pdf-text");
+  const run = (x: number, y: number, text: string, width = text.length * 0.3) => ({ x, y, width, text });
+  const sidebar = Array.from({ length: 8 }, (_, i) => run(1, 2 + i, `Sidebar item number ${i}`, 7));
+  const main = Array.from({ length: 8 }, (_, i) => run(10, 2 + i, `Main column bullet text number ${i} with more words`, 20));
+  const twoCol = layoutPage([...main, ...sidebar], 37);
+  assert.ok(twoCol.indexOf("Sidebar item number 7") < twoCol.indexOf("Main column bullet text number 0"));
+  // One column with right-aligned dates: titles and dates stay on the same line.
+  const oneCol = [
+    ...Array.from({ length: 8 }, (_, i) => run(2, 2 + i * 2, `Job title and company name ${i}`, 10)),
+    ...Array.from({ length: 8 }, (_, i) => run(30, 2 + i * 2, "May 2025", 3)),
+    ...Array.from({ length: 8 }, (_, i) => run(2.5, 3 + i * 2, `• A bullet that runs most of the way across the page ${i}`, 30)),
+  ];
+  assert.equal(findGutter(oneCol, 37), null);
+  assert.match(layoutPage(oneCol, 37), /Job title and company name 0 \| May 2025/);
+});
+
+test("pdf layout: a wrapped bullet is joined; the next bullet is not", async () => {
+  const { layoutPage } = await import("@/lib/pdf-text");
+  const text = layoutPage(
+    [
+      { x: 2, y: 2, width: 25, text: "• Redesigned a bracket, reducing weight by" },
+      { x: 2.6, y: 3, width: 10, text: "18% while passing load checks" },
+      { x: 2, y: 4, width: 20, text: "• Wrote work instructions" },
+    ],
+    37
+  );
+  assert.equal(text, "• Redesigned a bracket, reducing weight by 18% while passing load checks\n• Wrote work instructions");
+});
+
+test("number question for 'Added …' bullets asks about users, not the fallback", () => {
+  assert.match(questionFor("Added email notifications for ride requests"), /people used it|time or work/);
+});

@@ -42,8 +42,11 @@ function job(bullets: string[], extra: Partial<ResumeData["experience"][number]>
   };
 }
 
+/** Findings, minus "enough content" (most tests use one or two bullets on purpose). */
 function ids(data: ResumeData, pageCount: number | null = 1): CriterionId[] {
-  return runDeterministicChecks({ data, pageCount }).findings.map((f) => f.criterionId);
+  return runDeterministicChecks({ data, pageCount })
+    .findings.map((f) => f.criterionId)
+    .filter((id) => id !== "completeness.substance");
 }
 
 const GOOD = "Built a scheduling tool in React used by 40 tutors, cutting booking time by 30%";
@@ -115,9 +118,9 @@ test("missing contact info and entry dates", () => {
   assert.equal(found.filter((f) => f === "completeness.entry-dates").length, 2);
 });
 
-test("emoji and links without a scheme are flagged; accents and dashes are fine", () => {
+test("emoji and non-addresses are flagged; accents, dashes and bare domains are fine", () => {
   const data = resume({
-    personalInfo: { ...resume().personalInfo, fullName: "José Núñez", linkedin: "linkedin.com/in/jose", github: "https://github.com/jose" },
+    personalInfo: { ...resume().personalInfo, fullName: "José Núñez", linkedin: "jose on linkedin", github: "github.com/jose", website: "https://jose.dev" },
     experience: [job(["Built a tutoring app – used by 40 students 🚀 weekly"])],
   });
   const findings = runDeterministicChecks({ data, pageCount: 1 }).findings;
@@ -136,11 +139,13 @@ test("page count: flagged over one page, unchecked when unknown", () => {
 });
 
 test("scoring: bullet criteria score by share of bullets; unchecked criteria are ignored", () => {
-  const data = resume({ experience: [job([GOOD, "Built a scheduling tool in React for the campus tutoring center"])] });
+  const data = resume({
+    experience: [job([GOOD, "Led a team of 4 building a course planner used by 120 students", "Built a scheduling tool in React for the campus tutoring center"])],
+  });
   const r = runDeterministicChecks({ data, pageCount: 1 });
   const { categories, overall } = scoreReview({ findings: r.findings, checked: r.checked, bulletCount: r.bullets.length, entryCount: r.entryCount });
   const impact = categories.find((c) => c.category === "impact")!;
-  assert.equal(impact.score, 50); // 1 of 2 bullets measurable; impact.result (LLM) not checked
+  assert.equal(impact.score, 67); // 2 of 3 bullets measurable; impact.result (LLM) not checked
   assert.equal(categories.find((c) => c.category === "relevance")!.score, null);
   assert.ok(overall !== null && overall < 100);
 });
@@ -170,4 +175,26 @@ test("LLM findings: only LLM criteria citing real targets survive", async () => 
       ["relevance.supports", "ok"],
     ]
   );
+});
+
+test("sanitizeUrl keeps bare domains clickable and rejects non-addresses", async () => {
+  const { sanitizeUrl } = await import("@/lib/resume-latex");
+  assert.equal(sanitizeUrl("github.com/jokafor"), "https://github.com/jokafor");
+  assert.equal(sanitizeUrl("https://x.dev/a"), "https://x.dev/a");
+  assert.equal(sanitizeUrl("mailto:a@b.co"), "mailto:a@b.co");
+  assert.equal(sanitizeUrl("my portfolio"), "");
+  assert.equal(sanitizeUrl("javascript:alert(1)"), "");
+});
+
+test("a nearly empty resume gets findings and no overall score", () => {
+  const data = resume({
+    experience: [job([], { id: "j1" }), job([GOOD], { id: "j2" })],
+    projects: [{ id: "p1", name: "Robot", url: "", technologies: "", description: "" }],
+  });
+  const r = runDeterministicChecks({ data, pageCount: 1 });
+  const found = r.findings.map((f) => f.criterionId);
+  assert.equal(found.filter((f) => f === "completeness.entry-bullets").length, 2); // empty job and empty project
+  assert.ok(found.includes("completeness.substance"));
+  const { overall } = scoreReview({ findings: r.findings, checked: r.checked, bulletCount: r.bullets.length, entryCount: r.entryCount });
+  assert.equal(overall, null);
 });

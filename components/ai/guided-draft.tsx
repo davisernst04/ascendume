@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, Loader2, MessageSquareText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/input";
 import { DiffView } from "@/components/ai/diff-view";
 import { useSession } from "@/lib/auth-client";
 import { INTERVIEW_QUESTIONS, type InterviewAnswers } from "@/lib/ai/questions";
 import { requestDraft } from "@/lib/ai/rewrite-client";
-import { inputClass } from "@/components/builder/form-styles";
 import { track } from "@/lib/analytics/track";
 
 const EMPTY: InterviewAnswers = { role: "", did: "", result: "", tools: "" };
@@ -37,18 +37,20 @@ export function GuidedDraft({ kind, heading, current, onAccept, initiallyOpen = 
 
   if (!open) {
     return (
-      <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => setOpen(true)}>
-        <MessageSquareText className="h-3.5 w-3.5" />
-        Answer questions, draft bullets
+      <Button type="button" size="sm" variant="ghost" className="self-start text-brand hover:text-brand-deep" onClick={() => setOpen(true)}>
+        <MessageSquareText aria-hidden />
+        Draft bullets by answering questions
       </Button>
     );
   }
 
+  const shell = "rounded-lg border border-brand/40 bg-brand-wash/50 p-4";
+
   if (!session?.user) {
     return (
-      <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
-        Drafting bullets from your answers uses AI, which needs a free account. Your draft here is kept.{" "}
-        <Link href="/auth/sign-up?next=/new" className="text-primary hover:underline">
+      <div className={`${shell} text-sm text-ink`}>
+        Drafting bullets from your answers uses AI, which needs a free account. What you&apos;ve typed here is kept.{" "}
+        <Link href="/auth/sign-up?next=/new" className="font-semibold text-brand hover:underline">
           Sign up
         </Link>
       </div>
@@ -67,6 +69,12 @@ export function GuidedDraft({ kind, heading, current, onAccept, initiallyOpen = 
     }
   };
 
+  const close = () => {
+    setProposals(null);
+    setOpen(false);
+    setAnswers(EMPTY);
+  };
+
   const take = (i: number, accept: boolean) => {
     if (!proposals) return;
     if (accept) {
@@ -74,47 +82,47 @@ export function GuidedDraft({ kind, heading, current, onAccept, initiallyOpen = 
       track("rewrite_accepted", {});
     }
     const rest = proposals.filter((_, j) => j !== i);
-    setProposals(rest.length ? rest : null);
-    if (!rest.length) {
-      setOpen(false);
-      setAnswers(EMPTY);
-    }
+    if (rest.length) setProposals(rest);
+    else close();
   };
 
   if (proposals) {
     return (
-      <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3 text-sm">
-        <p className="font-medium">Drafted from your answers. Keep the ones that are right.</p>
-        {proposals.map((p, i) => (
-          <div key={`${i}-${p}`} className="flex items-start gap-2">
-            <div className="flex-1">
-              <DiffView before="" after={p} />
-            </div>
-            <Button type="button" size="sm" className="h-7 px-2" aria-label="Accept bullet" onClick={() => take(i, true)}>
-              <Check className="h-3.5 w-3.5" />
-            </Button>
-            <Button type="button" size="sm" variant="ghost" className="h-7 px-2" aria-label="Reject bullet" onClick={() => take(i, false)}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        ))}
-        <div className="flex gap-2">
+      <div className={`${shell} flex flex-col gap-3`}>
+        <div>
+          <p className="font-semibold text-ink">Drafted from your answers</p>
+          <p className="text-sm text-ink-soft">Keep the ones that are true and sound like you. Kept bullets go below your others.</p>
+        </div>
+        <ul className="flex flex-col gap-2">
+          {proposals.map((p, i) => (
+            <li key={`${i}-${p}`} className="flex items-start gap-2">
+              <div className="flex-1">
+                <DiffView before="" after={p} />
+              </div>
+              <Button type="button" size="icon-sm" variant="marker" aria-label="Keep this bullet" onClick={() => take(i, true)}>
+                <Check />
+              </Button>
+              <Button type="button" size="icon-sm" variant="ghost" aria-label="Discard this bullet" onClick={() => take(i, false)}>
+                <X />
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             size="sm"
-            className="h-7"
+            variant="marker"
             onClick={() => {
               onAccept(proposals);
               track("rewrite_accepted", {});
-              setProposals(null);
-              setOpen(false);
-              setAnswers(EMPTY);
+              close();
             }}
           >
-            Accept all
+            Keep all
           </Button>
-          <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setProposals(null)}>
-            Back to answers
+          <Button type="button" size="sm" variant="ghost" onClick={() => setProposals(null)}>
+            Back to my answers
           </Button>
         </div>
       </div>
@@ -123,25 +131,24 @@ export function GuidedDraft({ kind, heading, current, onAccept, initiallyOpen = 
 
   return (
     <form
-      className="rounded-lg border border-border bg-muted/20 p-3 space-y-3 text-sm"
+      className={`${shell} flex flex-col gap-4`}
       onSubmit={(e) => {
         e.preventDefault();
         if (answers.did.trim()) draft();
       }}
     >
-      <p className="text-muted-foreground">
-        Answer in your own words. Class projects, hackathons, clubs and labs all count. We only write
-        from what you say here.
+      <p className="text-sm text-ink-soft">
+        Answer in your own words. Rough notes are fine. Bullets are written only from what you put here.
       </p>
       {INTERVIEW_QUESTIONS.map((q) => (
-        <div key={q.id}>
-          <label className="block font-medium mb-1" htmlFor={`interview-${q.id}`}>
+        <div key={q.id} className="flex flex-col gap-1.5">
+          <label className="text-sm font-semibold text-ink" htmlFor={`interview-${q.id}`}>
             {q.label}
+            {!q.required && !/optional/i.test(q.label) && <span className="font-normal text-ink-soft"> (optional)</span>}
           </label>
-          <textarea
+          <Textarea
             id={`interview-${q.id}`}
             rows={q.id === "did" ? 3 : 2}
-            className={`${inputClass} resize-none text-sm`}
             placeholder={q.placeholder}
             value={answers[q.id]}
             onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
@@ -150,13 +157,17 @@ export function GuidedDraft({ kind, heading, current, onAccept, initiallyOpen = 
           />
         </div>
       ))}
-      {error && <p className="text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" className="h-8 gap-1.5" disabled={busy || !answers.did.trim()}>
-          {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Draft bullets
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" size="sm" variant="marker" disabled={busy || !answers.did.trim()}>
+          {busy && <Loader2 className="animate-spin" aria-hidden />}
+          {busy ? "Drafting…" : "Draft bullets"}
         </Button>
-        <Button type="button" size="sm" variant="ghost" className="h-8" disabled={busy} onClick={() => setOpen(false)}>
+        <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => setOpen(false)}>
           Cancel
         </Button>
       </div>

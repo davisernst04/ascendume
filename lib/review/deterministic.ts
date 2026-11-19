@@ -2,9 +2,10 @@
 // guests included, and only when the user asks for a review.
 import type { ResumeData } from "@/lib/resume-context";
 import { type Bullet, extractBullets, type ResumeSection } from "@/lib/review/bullets";
-import type { Finding } from "@/lib/review/findings";
+import { type Finding, MIN_BULLETS_FOR_SCORE as MIN_BULLETS } from "@/lib/review/findings";
 import type { CriterionId } from "@/lib/review/rubric";
 import { firstWord, verbTense } from "@/lib/review/verbs";
+import { sanitizeUrl } from "@/lib/resume-latex";
 
 export interface DeterministicInput {
   data: ResumeData;
@@ -36,6 +37,7 @@ const WEAK_PHRASES: RegExp[] = [
   /\betc\b\.?/i,
 ];
 
+
 /** Jake's template fits roughly 110 characters per bullet line. */
 const MAX_BULLET_CHARS = 220;
 const MIN_BULLET_CHARS = 25;
@@ -44,7 +46,7 @@ const MIN_BULLET_CHARS = 25;
 // and the common typographic punctuation (dashes, curly quotes, bullet, ellipsis).
 const UNRENDERABLE_CHAR = /[^\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\n\r\t]/u;
 
-const LINK = /^(https?:\/\/|mailto:)/i;
+// A link is fine if the PDF can make it clickable (see sanitizeUrl).
 
 function quote(s: string, max = 40): string {
   return s.length > max ? `"${s.slice(0, max - 1)}…"` : `"${s}"`;
@@ -142,6 +144,8 @@ export function runDeterministicChecks({ data, pageCount }: DeterministicInput):
     "consistency.punctuation",
     "completeness.contact",
     "completeness.entry-dates",
+    "completeness.entry-bullets",
+    "completeness.substance",
     "ats.characters",
     "ats.links",
   ]);
@@ -229,6 +233,27 @@ export function runDeterministicChecks({ data, pageCount }: DeterministicInput):
     }
   }
 
+  // Bullets per entry, and enough bullets overall
+  const entriesWithBullets = new Set(bullets.map((b) => b.entryId));
+  for (const e of data.experience) {
+    if (!entriesWithBullets.has(e.id)) {
+      const label = [e.position, e.company].filter(Boolean).join(", ") || "Untitled role";
+      add("completeness.entry-bullets", { kind: "entry", section: "experience", entryId: e.id, label }, "No bullet points yet.");
+    }
+  }
+  for (const p of data.projects) {
+    if (!entriesWithBullets.has(p.id)) {
+      add("completeness.entry-bullets", { kind: "entry", section: "projects", entryId: p.id, label: p.name || "Untitled project" }, "No bullet points yet.");
+    }
+  }
+  if (bullets.length < MIN_BULLETS) {
+    add(
+      "completeness.substance",
+      { kind: "resume" },
+      bullets.length === 0 ? "There are no bullet points yet." : `Only ${bullets.length} bullet point${bullets.length === 1 ? "" : "s"} so far.`
+    );
+  }
+
   // Characters the template can't render
   for (const b of bullets) {
     const bad = b.text.match(UNRENDERABLE_CHAR)?.[0];
@@ -244,8 +269,8 @@ export function runDeterministicChecks({ data, pageCount }: DeterministicInput):
   // Links
   for (const f of linkFields(data)) {
     const v = f.value.trim();
-    if (v && !LINK.test(v)) {
-      add("ats.links", { kind: "field", section: f.section, label: f.label }, `${quote(v)} needs https:// in front to be clickable.`);
+    if (v && !sanitizeUrl(v)) {
+      add("ats.links", { kind: "field", section: f.section, label: f.label }, `${quote(v)} isn't a web address, so it won't be a working link.`);
     }
   }
 

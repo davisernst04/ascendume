@@ -1,18 +1,21 @@
 import { diffWords } from "@/lib/text-diff";
 
-/** A rewrite shown against the original: removed words struck through, added words highlighted. */
+/**
+ * A rewrite shown against the original: removed words struck through in red,
+ * added words highlighted the way a skimming reader would mark them.
+ */
 export function DiffView({ before, after }: { before: string; after: string }) {
   return (
-    <p className="rounded-md bg-muted/40 px-2 py-1.5 leading-relaxed">
+    <p className="rounded-sm bg-paper px-3 py-2 font-serif text-[0.9375rem] leading-relaxed text-[#2b2620] shadow-[0_0_0_1px_var(--rule)]">
       {diffWords(before, after).map((part, i) =>
         part.type === "same" ? (
           <span key={i}>{part.text}</span>
         ) : part.type === "added" ? (
-          <ins key={i} className="no-underline bg-emerald-500/20 text-emerald-300 rounded-sm">
+          <ins key={i} className="highlight no-underline">
             {part.text}
           </ins>
         ) : (
-          <del key={i} className="bg-red-500/15 text-red-300/80 rounded-sm">
+          <del key={i} className="text-[#6b6257] decoration-[#8e2f2a] decoration-2">
             {part.text}
           </del>
         )

@@ -143,6 +143,22 @@ export const CRITERIA = [
     reason: "Missing dates make readers guess when, and for how long.",
   },
   {
+    id: "completeness.entry-bullets",
+    category: "completeness",
+    kind: "deterministic",
+    scope: "resume",
+    check: "Every job and project has bullet points",
+    reason: "A job or project with no bullets says where you were, but not what you did there.",
+  },
+  {
+    id: "completeness.substance",
+    category: "completeness",
+    kind: "deterministic",
+    scope: "resume",
+    check: "Enough content to review: at least 3 bullets",
+    reason: "Most of the review looks at bullets. Add what you did in your jobs, projects, clubs or classes.",
+  },
+  {
     id: "ats.characters",
     category: "ats",
     kind: "deterministic",
@@ -155,8 +171,8 @@ export const CRITERIA = [
     category: "ats",
     kind: "deterministic",
     scope: "resume",
-    check: "Links are complete URLs",
-    reason: "A link without https:// isn't clickable in the PDF.",
+    check: "Links are web addresses",
+    reason: "A link that isn't a web address (like a handle or a phrase) can't be clicked in the PDF.",
   },
   {
     id: "relevance.supports",

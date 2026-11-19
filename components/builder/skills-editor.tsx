@@ -1,70 +1,60 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
 import { useResume } from "@/lib/resume-context";
-import { addButtonClass, inputClass, labelClass } from "@/components/builder/form-styles";
+import { AddButton, ConfirmRemove } from "@/components/builder/fields";
+import { Input } from "@/components/ui/input";
 
 export function SkillsEditor({ disabled }: { disabled: boolean }) {
-  const { resumeData, addSkillCategory, updateSkillCategory, removeSkillCategory } =
-    useResume();
+  const { resumeData, addSkillCategory, updateSkillCategory, removeSkillCategory } = useResume();
   const { skills } = resumeData;
 
   return (
-    <div className="space-y-4 mt-4">
-      <p className="text-sm text-muted-foreground">
-        Each row becomes one line on your resume, like{" "}
-        <span className="font-medium text-foreground">Languages: Python, Java</span>.
-        Rename the labels to fit your field.
-      </p>
-      {skills.map((category) => (
-        <div key={category.id} className="flex gap-3 items-end">
-          <div className="w-1/3">
-            <label className={labelClass} htmlFor={`skill-label-${category.id}`}>
-              Label
-            </label>
-            <input
-              id={`skill-label-${category.id}`}
-              type="text"
-              className={inputClass}
-              placeholder="Languages"
-              value={category.label}
-              onChange={(e) => updateSkillCategory(category.id, { label: e.target.value })}
-              disabled={disabled}
-            />
+    <div className="flex flex-col gap-4">
+      {skills.length > 0 && (
+        <div className="rounded-lg border border-rule bg-raised">
+          <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] gap-3 border-b border-rule px-4 py-2 text-sm font-semibold text-ink sm:grid">
+            <span id="skills-label-col">Label</span>
+            <span id="skills-items-col">Skills, separated by commas</span>
+            <span aria-hidden className="w-8" />
           </div>
-          <div className="flex-1">
-            <label className={labelClass} htmlFor={`skill-items-${category.id}`}>
-              Skills
-            </label>
-            <input
-              id={`skill-items-${category.id}`}
-              type="text"
-              className={inputClass}
-              placeholder="Python, Java, SQL"
-              value={category.items}
-              onChange={(e) => updateSkillCategory(category.id, { items: e.target.value })}
-              disabled={disabled}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => removeSkillCategory(category.id)}
-            disabled={disabled}
-            aria-label={`Remove ${category.label || "skill category"}`}
-            className="h-10 px-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <ul className="divide-y divide-rule">
+            {skills.map((category) => (
+              <li
+                key={category.id}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]"
+              >
+                <Input
+                  aria-label="Label"
+                  aria-describedby="skills-label-col"
+                  placeholder="Languages"
+                  value={category.label}
+                  onChange={(e) => updateSkillCategory(category.id, { label: e.target.value })}
+                  disabled={disabled}
+                  className="font-semibold"
+                />
+                <div className="order-last col-span-2 sm:order-none sm:col-span-1">
+                  <Input
+                    aria-label={`Skills for ${category.label || "this row"}`}
+                    placeholder="Python, Java, SQL"
+                    value={category.items}
+                    onChange={(e) => updateSkillCategory(category.id, { items: e.target.value })}
+                    disabled={disabled}
+                  />
+                </div>
+                <ConfirmRemove
+                  what={category.label || "this row"}
+                  onRemove={() => removeSkillCategory(category.id)}
+                  disabled={disabled}
+                />
+              </li>
+            ))}
+          </ul>
         </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => addSkillCategory()}
-        disabled={disabled}
-        className={addButtonClass}
-      >
-        <Plus className="w-4 h-4" /> Add Category
-      </button>
+      )}
+      <AddButton onClick={() => addSkillCategory()} disabled={disabled}>
+        Add a row
+      </AddButton>
+      <p className="text-sm text-ink-soft">Rename the labels to fit your field: Lab techniques, Languages, Software.</p>
     </div>
   );
 }

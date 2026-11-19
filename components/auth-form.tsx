@@ -9,7 +9,7 @@ import type { SocialProviderId } from "@/lib/auth-providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wordmark } from "@/components/wordmark";
 
 const PROVIDERS: Record<SocialProviderId, { name: string; icon: React.ReactNode }> = {
   github: {
@@ -46,27 +46,36 @@ interface AuthFormProps {
   providers: SocialProviderId[];
   /** Same-site path to land on afterwards (already validated by the page). */
   next: string;
+  /** An OAuth error code better-auth redirected back with. */
+  oauthError?: string;
 }
 
-export function AuthForm({ mode, providers, next }: AuthFormProps) {
+/** Plain-language messages for the OAuth errors users can actually hit. */
+export function oauthErrorMessage(code: string | undefined): string | null {
+  if (!code) return null;
+  if (code === "account_not_linked") {
+    return "An account with this email already exists. Sign in with your email and password, then connect GitHub or Google from your Account page.";
+  }
+  if (code === "access_denied") return "Sign-in was cancelled.";
+  return "That sign-in didn't work. Try again, or use your email and password.";
+}
+
+export function AuthForm({ mode, providers, next, oauthError }: AuthFormProps) {
   const router = useRouter();
   const isSignUp = mode === "sign-up";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // A visible-password toggle instead of a second "confirm" field: one less field to fill and scroll past.
+  const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState<"email" | SocialProviderId | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(oauthErrorMessage(oauthError));
 
   const nextQuery = next === "/" ? "" : `?next=${encodeURIComponent(next)}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (isSignUp && password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
     setPending("email");
     try {
       const result = isSignUp
@@ -89,7 +98,11 @@ export function AuthForm({ mode, providers, next }: AuthFormProps) {
     setError(null);
     setPending(provider);
     try {
-      const result = await signIn.social({ provider, callbackURL: next });
+      const result = await signIn.social({
+        provider,
+        callbackURL: next,
+        errorCallbackURL: `/auth/${mode}${nextQuery}`,
+      });
       if (result?.error) {
         setError(result.error.message ?? `Could not continue with ${PROVIDERS[provider].name}`);
         setPending(null);
@@ -103,103 +116,126 @@ export function AuthForm({ mode, providers, next }: AuthFormProps) {
   const busy = pending !== null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">
-            {isSignUp ? "Create an account" : "Sign in"}
-          </CardTitle>
-          <CardDescription>
-            {isSignUp
-              ? "Free. Save your resumes and use the AI review."
-              : "Welcome back. Your resumes are where you left them."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="grid h-dvh bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      {/* A quiet panel beside the form on wide screens */}
+      <aside className="hidden flex-col justify-between bg-brand p-10 text-[#efeee6] lg:flex dark:bg-[#22352a]">
+        <Wordmark className="text-[#efeee6]" />
+        <div className="max-w-md">
+          <p className="font-display text-[2.25rem] font-bold leading-tight">
+            {isSignUp ? "Your resumes, saved. The AI review, unlocked." : "Pick up where you left off."}
+          </p>
+          <p className="mt-4 text-[#efeee6]/75">
+            Every finding points at the bullet it&apos;s about, and the AI never adds a number you didn&apos;t give.
+          </p>
+        </div>
+        <Link href="/privacy" className="text-sm text-[#efeee6]/70 hover:text-[#efeee6] hover:underline">
+          What we store, and where your resume text goes
+        </Link>
+      </aside>
+
+      <main className="flex min-h-0 flex-col overflow-y-auto px-4 sm:px-8">
+        <header className="flex h-16 shrink-0 items-center lg:hidden">
+          <Wordmark />
+        </header>
+        <div className="mx-auto my-auto w-full max-w-sm py-6">
+          <h1 className="text-[2rem] font-bold leading-tight text-ink">
+            {isSignUp ? "Create your account" : "Sign in"}
+          </h1>
+          <p className="mt-1 text-ink-soft">
+            {isSignUp ? "Free, with no credit card." : "Welcome back."}{" "}
+            {isSignUp ? "Already have an account? " : "New here? "}
+            <Link href={`/auth/${isSignUp ? "sign-in" : "sign-up"}${nextQuery}`} className="whitespace-nowrap font-medium text-brand hover:underline">
+              {isSignUp ? "Sign in" : "Create an account"}
+            </Link>
+          </p>
+
           {providers.length > 0 && (
-            <>
-              <div className="space-y-2">
-                {providers.map((p) => (
-                  <Button
-                    key={p}
-                    variant="outline"
-                    type="button"
-                    className="w-full gap-2"
-                    onClick={() => handleSocial(p)}
-                    disabled={busy}
-                  >
-                    {pending === p ? <Loader2 className="h-4 w-4 animate-spin" /> : PROVIDERS[p].icon}
-                    Continue with {PROVIDERS[p].name}
-                  </Button>
-                ))}
-              </div>
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or use email</span>
-                </div>
-              </div>
-            </>
+            <div className="mt-6 grid gap-2" style={{ gridTemplateColumns: `repeat(${providers.length}, minmax(0, 1fr))` }}>
+              {providers.map((p) => (
+                <Button
+                  key={p}
+                  variant="outline"
+                  type="button"
+                  className="h-10 w-full"
+                  onClick={() => handleSocial(p)}
+                  disabled={busy}
+                  aria-label={`Continue with ${PROVIDERS[p].name}`}
+                >
+                  {pending === p ? <Loader2 className="animate-spin" aria-hidden /> : PROVIDERS[p].icon}
+                  <span className={providers.length > 2 ? "hidden sm:inline" : undefined}>{PROVIDERS[p].name}</span>
+                </Button>
+              ))}
+            </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <form onSubmit={handleSubmit} className="mt-5">
+            {providers.length > 0 && (
+              <div className="mb-4 flex items-center gap-3 text-sm text-ink-soft">
+                <span className="h-px flex-1 bg-rule" />
+                or with email
+                <span className="h-px flex-1 bg-rule" />
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" autoComplete={isSignUp ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm password</Label>
-                <Input id="confirmPassword" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-              </div>
-            )}
-            {error && <div role="alert" className="text-sm text-destructive">{error}</div>}
-            <Button type="submit" className="w-full" disabled={busy}>
-              {pending === "email" ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isSignUp ? "Creating account..." : "Signing in..."}
-                </>
-              ) : isSignUp ? (
-                "Create account"
-              ) : (
-                "Sign in"
+            <div className="flex flex-col gap-3">
+              {isSignUp && (
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
               )}
-            </Button>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" autoComplete="email" placeholder="name@school.edu" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-sm text-ink-soft hover:text-ink"
+                    aria-controls="password"
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={isSignUp ? 8 : undefined}
+                />
+              </div>
+              {error && (
+                <p role="alert" className="rounded-md bg-danger-wash px-3 py-2 text-sm text-danger">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" size="lg" className="mt-1 h-11 w-full" disabled={busy}>
+                {pending === "email" && <Loader2 className="animate-spin" aria-hidden />}
+                {pending === "email"
+                  ? isSignUp
+                    ? "Creating account…"
+                    : "Signing in…"
+                  : isSignUp
+                    ? "Create account"
+                    : "Sign in"}
+              </Button>
+            </div>
           </form>
-
           {isSignUp && (
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              What we store and where your resume text goes:{" "}
-              <Link href="/privacy" className="text-primary hover:underline">
-                privacy note
+            <p className="mt-4 text-sm text-ink-soft lg:hidden">
+              <Link href="/privacy" className="font-medium text-brand hover:underline">
+                What we store, and where your resume text goes
               </Link>
             </p>
           )}
-
-          <div className="mt-4 text-center text-sm">
-            {isSignUp ? "Already have an account? " : "Don't have an account? "}
-            <Link
-              href={`/auth/${isSignUp ? "sign-in" : "sign-up"}${nextQuery}`}
-              className="text-primary hover:underline"
-            >
-              {isSignUp ? "Sign in" : "Sign up"}
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </main>
     </div>
   );
 }

@@ -74,6 +74,12 @@ interface DbResume {
   certifications?: DbCertification[];
 }
 
+/** The saved content of a resume (not its id), to tell whether anything changed. */
+function savedFingerprint(data: ResumeData): string {
+  const { title, personalInfo, experience, education, skills, projects, certifications } = data;
+  return JSON.stringify({ title, personalInfo, experience, education, skills, projects, certifications });
+}
+
 export function useResumePersistence(resumeId?: string) {
   const { data: session, isPending } = useSession();
   const { resumeData, setResumeData } = useResume();
@@ -82,6 +88,13 @@ export function useResumePersistence(resumeId?: string) {
   const resumeIdRef = useRef<string | null>(resumeId && resumeId !== "new" ? resumeId : null);
   const isInitialLoadRef = useRef(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("saved");
+  // What the database holds, so loading a resume (or an id being added) doesn't trigger a save.
+  const lastSavedRef = useRef<string | null>(null);
+  // One save at a time: each PUT deletes and re-inserts sections, so overlapping
+  // saves could interleave. Edits made meanwhile are saved right after.
+  const savingRef = useRef(false);
+  const pendingSaveRef = useRef<ResumeData | null>(null);
 
   // Load resume on mount
   useEffect(() => {
@@ -105,7 +118,7 @@ export function useResumePersistence(resumeId?: string) {
             const resume: DbResume = await response.json();
             
             // Transform database format to context format
-            setResumeData({
+            const loaded: ResumeData = {
               id: resume.id,
               title: resume.title,
               personalInfo: {
@@ -151,7 +164,9 @@ export function useResumePersistence(resumeId?: string) {
                 date: cert.date || "",
                 credentialUrl: cert.credentialUrl || "",
               })),
-            });
+            };
+            setResumeData(loaded);
+            lastSavedRef.current = savedFingerprint(loaded);
             isInitialLoadRef.current = false;
             return;
           }
@@ -167,57 +182,85 @@ export function useResumePersistence(resumeId?: string) {
   }, [session?.user, isPending, setResumeData, resumeId]);
 
   // Save resume with debouncing
-  const saveResume = useCallback(async (data: ResumeData) => {
-    if (isInitialLoadRef.current) return;
-
-    if (session?.user) {
-      // Save to database
-      try {
-        if (resumeIdRef.current) {
-          // Update existing
-          await fetch(`/api/resumes/${resumeIdRef.current}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: data.title,
-              personalInfoData: data.personalInfo,
-              workExperienceData: data.experience,
-              educationData: data.education,
-              skillsData: data.skills,
-              projectsData: data.projects,
-              certificationsData: data.certifications,
-            }),
-          });
-        } else {
-          // Create new
-          const response = await fetch("/api/resumes", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: data.title,
-              personalInfoData: data.personalInfo,
-              workExperienceData: data.experience,
-              educationData: data.education,
-              skillsData: data.skills,
-              projectsData: data.projects,
-              certificationsData: data.certifications,
-            }),
-          });
-          if (response.ok) {
+  const saveResume = useCallback(async (data: ResumeData): Promise<void> => {
+    const writeResume = async (data: ResumeData, fingerprint: string) => {
+      if (session?.user) {
+        // Save to database
+        try {
+          if (resumeIdRef.current) {
+            // Update existing
+            const response = await fetch(`/api/resumes/${resumeIdRef.current}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: data.title,
+                personalInfoData: data.personalInfo,
+                workExperienceData: data.experience,
+                educationData: data.education,
+                skillsData: data.skills,
+                projectsData: data.projects,
+                certificationsData: data.certifications,
+              }),
+            });
+            if (!response.ok) throw new Error(`Save failed (${response.status})`);
+            lastSavedRef.current = fingerprint;
+          } else {
+            // Create new
+            const response = await fetch("/api/resumes", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: data.title,
+                personalInfoData: data.personalInfo,
+                workExperienceData: data.experience,
+                educationData: data.education,
+                skillsData: data.skills,
+                projectsData: data.projects,
+                certificationsData: data.certifications,
+              }),
+            });
+            if (!response.ok) throw new Error(`Save failed (${response.status})`);
             const resume = await response.json();
             clearDraft(); // the draft now lives in the account
             resumeIdRef.current = resume.id;
+            lastSavedRef.current = fingerprint;
             setResumeData({ ...data, id: resume.id });
             router.replace(`/${resume.id}`);
           }
+          return true;
+        } catch (error) {
+          console.error("Error saving resume to database:", error);
+          return false;
         }
-      } catch (error) {
-        console.error("Error saving resume to database:", error);
       }
-    } else {
       writeDraft(data);
+      return true;
+    };
+
+    if (isInitialLoadRef.current) return;
+    if (savingRef.current) {
+      pendingSaveRef.current = data;
+      return;
+    }
+    savingRef.current = true;
+    try {
+      let current: ResumeData | null = data;
+      let ok = true;
+      while (current) {
+        const fingerprint = savedFingerprint(current);
+        if (!(session?.user && fingerprint === lastSavedRef.current)) {
+          if (session?.user) setSaveState("saving");
+          ok = await writeResume(current, fingerprint);
+        }
+        current = pendingSaveRef.current;
+        pendingSaveRef.current = null;
+      }
+      setSaveState(ok ? "saved" : "error");
+    } finally {
+      savingRef.current = false;
     }
   }, [session?.user, setResumeData, router]);
+
 
   // Debounced save on data change
   useEffect(() => {
@@ -241,5 +284,9 @@ export function useResumePersistence(resumeId?: string) {
   return {
     /** True once the resume (or the browser draft) has been loaded into the builder. */
     isLoaded,
+    /** Whether the latest edits are stored (in the account, or in this browser for guests). */
+    saveState,
   };
 }
+
+export type SaveState = "saved" | "saving" | "error";

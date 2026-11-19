@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Loader2, Hash } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DiffView } from "@/components/ai/diff-view";
 import { questionFor } from "@/lib/ai/questions";
 import { requestNumberRewrite } from "@/lib/ai/rewrite-client";
@@ -19,7 +20,7 @@ type Step =
   | { kind: "applied" };
 
 /**
- * "Ask for a number" on a bullet with no measurable outcome: a targeted
+ * "Add a number" on a bullet with no measurable outcome: a targeted
  * question, a rewrite that uses only the answer, and a diff to accept or
  * reject. Skipping leaves the bullet as it is.
  */
@@ -30,8 +31,8 @@ export function NumberPrompt({ bullet, signedIn }: { bullet: Bullet; signedIn: b
 
   if (!signedIn) {
     return (
-      <p className="text-xs text-muted-foreground">
-        <Link href="/auth/sign-up?next=/new" className="text-primary hover:underline">
+      <p className="text-sm text-ink-soft">
+        <Link href="/auth/sign-up?next=/new" className="font-semibold text-brand hover:underline">
           Sign up free
         </Link>{" "}
         and we&apos;ll help you work a number into this bullet.
@@ -41,16 +42,16 @@ export function NumberPrompt({ bullet, signedIn }: { bullet: Bullet; signedIn: b
 
   if (step.kind === "closed") {
     return (
-      <Button size="sm" variant="outline" className="h-7 gap-1.5" onClick={() => setStep({ kind: "asking", answer: "" })}>
-        <Hash className="h-3.5 w-3.5" /> Add a number
+      <Button size="sm" variant="outline" className="border-brand/50 text-brand hover:bg-brand-wash" onClick={() => setStep({ kind: "asking", answer: "" })}>
+        Add a number
       </Button>
     );
   }
 
   if (step.kind === "applied") {
     return (
-      <p className="inline-flex items-center gap-1 text-xs text-emerald-500">
-        <Check className="h-3.5 w-3.5" /> Updated. Run the review again to re-check.
+      <p role="status" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ok">
+        <Check className="size-4" aria-hidden /> Bullet updated. Run the review again to re-check it.
       </p>
     );
   }
@@ -73,13 +74,18 @@ export function NumberPrompt({ bullet, signedIn }: { bullet: Bullet; signedIn: b
 
   if (step.kind === "proposed") {
     return (
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-semibold text-ink">Here&apos;s the bullet with your number in it:</p>
         <DiffView before={bullet.text} after={step.proposal} />
-        {step.error && <p className="text-xs text-destructive">{step.error}</p>}
+        {step.error && (
+          <p role="alert" className="text-sm text-danger">
+            {step.error}
+          </p>
+        )}
         <div className="flex gap-2">
           <Button
             size="sm"
-            className="h-7"
+            variant="marker"
             onClick={() => {
               if (applyRewrite(bullet, step.proposal)) {
                 track("rewrite_accepted", {});
@@ -89,10 +95,10 @@ export function NumberPrompt({ bullet, signedIn }: { bullet: Bullet; signedIn: b
               }
             }}
           >
-            Accept
+            Use this
           </Button>
-          <Button size="sm" variant="ghost" className="h-7" onClick={() => setStep({ kind: "closed" })}>
-            Reject
+          <Button size="sm" variant="ghost" onClick={() => setStep({ kind: "closed" })}>
+            Keep mine
           </Button>
         </div>
       </div>
@@ -103,31 +109,34 @@ export function NumberPrompt({ bullet, signedIn }: { bullet: Bullet; signedIn: b
   const busy = step.kind === "rewriting";
   return (
     <form
-      className="space-y-2"
+      className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         if (answer.trim()) submit(answer.trim());
       }}
     >
-      <label className="block text-xs font-medium" htmlFor={`num-${bullet.id}`}>
+      <label className="text-sm font-semibold text-ink" htmlFor={`num-${bullet.id}`}>
         {question}
       </label>
-      <input
+      <Input
         id={`num-${bullet.id}`}
         autoFocus
-        className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
         placeholder="A rough number is fine. Skip if you don't know."
         value={answer}
         disabled={busy}
         onChange={(e) => setStep({ kind: "asking", answer: e.target.value })}
       />
-      {step.kind === "asking" && step.error && <p className="text-xs text-destructive">{step.error}</p>}
+      {step.kind === "asking" && step.error && (
+        <p role="alert" className="text-sm text-danger">
+          {step.error}
+        </p>
+      )}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" className="h-7 gap-1.5" disabled={busy || !answer.trim()}>
-          {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Rewrite with this
+        <Button type="submit" size="sm" variant="marker" disabled={busy || !answer.trim()}>
+          {busy && <Loader2 className="animate-spin" aria-hidden />}
+          {busy ? "Rewriting…" : "Rewrite with this"}
         </Button>
-        <Button type="button" size="sm" variant="ghost" className="h-7" disabled={busy} onClick={() => setStep({ kind: "closed" })}>
+        <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => setStep({ kind: "closed" })}>
           Skip
         </Button>
       </div>

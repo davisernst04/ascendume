@@ -101,7 +101,7 @@ The `app/` directory uses two route groups plus standalone routes:
 - `app/(application)/` — Dashboard (authenticated); page components live here as `-page.tsx` files rather than in `page.tsx` directly
 - `app/(application)/[id]/` — Resume builder for an existing resume (URL: `/<id>`)
 - `app/(application)/new/` — Resume builder for a new resume (URL: `/new`)
-- `app/(application)/layout.tsx` — Signed-in users get `DashboardLayoutClient` + `DashboardSidebar`; guests get `GuestLayout` (no sidebar). `/new` works for guests; `/[id]` redirects guests to sign-in itself
+- `app/(application)/layout.tsx` — Every app page renders inside `AppFrame` (`components/app-header.tsx`): a header with the account menu for signed-in users, or sign-in/sign-up prompts for guests. The resume list lives on the signed-in home (`app/(application)/dashboard-page.tsx`), not a sidebar. `/new` works for guests; `/[id]` redirects guests to sign-in itself
 - Guest drafts live in `localStorage` (`lib/resume-draft.ts`). When a signed-in user opens `/new` with a draft present, the first autosave creates the resume in their account and clears the draft — that is how work carries over after sign-up or sign-in
 - Auth pages take `?next=<path>` (validated by `lib/safe-redirect.ts`) to return users where they were
 - `app/auth/sign-in/` and `app/auth/sign-up/` — Auth pages
@@ -144,6 +144,16 @@ The rubric is data in `lib/review/rubric.ts` (id, category, kind, scope, reason)
 - `app/privacy/page.tsx` is the plain-English privacy note. **Update it whenever you change what is stored, what goes to OpenAI, or which third parties load.** It is a promise to users, not boilerplate.
 - Account deletion uses better-auth's `deleteUser` (`lib/auth.ts`). Rows cascade from `user`; uploaded PDFs are deleted from Blob first via `lib/blob-files.ts`. Any new user-owned table needs `onDelete: "cascade"` to `user`, and any new file storage needs cleanup there.
 - Analytics: `track()` from `lib/analytics/track.ts` sends to Vercel Analytics and to `analytics_events`. Only the six events in `lib/analytics/events.ts` exist, with enum-only props — never add a prop that could carry resume text.
+
+### Visual design
+
+Tokens live in `app/globals.css`: an academic, earth-toned palette. Parchment surfaces and warm ink; forest green for anything you click (`bg-brand`, Button `default`); a soft ochre highlighter for review findings, AI proposals and the "Review" action (`bg-marker`, `.highlight`, Button `marker`); oxblood for strike-throughs and errors (`danger`). Only the resume page (`.sheet`) casts a shadow. Type is Alegreya (headings, `font-display`, the wordmark) with Alegreya Sans for the interface, both self-hosted through `next/font`. Use the token colors (`ink`, `ink-soft`, `rule`, `mist`, `surface`, `raised`, `brand`, `marker`, `danger`, `ok`), not raw Tailwind palette colors.
+
+**No scrolling to reach a form or see the page.** The builder's title and actions portal into the app header (`HEADER_SLOT_ID` in `components/app-header.tsx`) on md+ screens; the preview is sized to fit the desk's height and shows one page at a time with a pager; list sections are accordions with one entry open (`useOpenEntry` in `components/builder/fields.tsx`); field hints stay to one short line. Keep new builder UI inside that budget.
+
+The landing page is a single screen (hero only, sized to the window height, nothing to scroll to); keep it that way. Its background is a forest-green leather cover (`.notebook-cover` in `globals.css` layers a seamless grain tile over the forest-green ground), and the resume sits straight. Its motion (letter-by-letter headline, buttons wiping in, a one-time "ATS scan" of the resume ending on a score of 100) is CSS keyframes in `globals.css` with start times passed from the components as `--at` or inline delays, so it plays once from server HTML before hydration. The highlight and section-tick positions in `components/landing/hero-resume.tsx` are percentages of `public/resume-preview.png`: re-measure them if that image changes.
+
+The builder splits into `components/ResumeBuilder.tsx` (toolbar, section nav, the desk with page/review), `components/builder/section-editors.tsx` (one editor per section, plus the `SECTIONS` list in page order) and `components/builder/fields.tsx` (labelled fields, entry blocks, remove-with-confirm).
 
 ### Key Conventions
 

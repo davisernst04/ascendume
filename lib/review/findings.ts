@@ -1,6 +1,9 @@
 import type { ResumeSection } from "@/lib/review/bullets";
 import { CATEGORIES, CRITERIA, type Category, type CriterionId, getCriterion } from "@/lib/review/rubric";
 
+/** No overall score below this many bullets: a nearly empty resume would otherwise score high. */
+export const MIN_BULLETS_FOR_SCORE = 3;
+
 /** What a finding is about, so the panel can quote it and send the user to fix it. */
 export type FindingTarget =
   | { kind: "bullet"; bulletId: string }
@@ -71,6 +74,9 @@ export function scoreReview(input: ScoreInput): { categories: CategoryScore[]; o
     return { category: id, label, score, findings };
   });
   const scored = categories.map((c) => c.score).filter((s): s is number => s !== null);
-  const overall = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : null;
+  const overall =
+    scored.length && input.bulletCount >= MIN_BULLETS_FOR_SCORE
+      ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length)
+      : null;
   return { categories, overall };
 }

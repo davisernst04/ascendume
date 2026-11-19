@@ -16,6 +16,8 @@ function createAuth() {
       requireEmailVerification: false, // Can enable later
     },
     socialProviders: socialProvidersConfig(),
+    // OAuth failures land on our sign-in page (with ?error=...) instead of better-auth's raw error screen.
+    onAPIError: { errorURL: "/auth/sign-in" },
     account: {
       accountLinking: {
         enabled: true,

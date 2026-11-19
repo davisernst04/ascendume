@@ -103,6 +103,7 @@ export async function draftBullets(input: DraftInput): Promise<string[]> {
         prompt: `Write resume bullets for a student or new grad from their own answers below. Class projects, hackathons, clubs and labs are real experience: write them with the same care as a job.
 ${rules(input.current)}
 - Write 1 to 4 bullets; fewer is better than padding. Each bullet covers a different thing they did.
+- Credit the student only with what they say they did themselves. If they worked with others, describe their own part, or say "with a teammate" / "on a team of N" when they gave that.
 - Do not end bullets with a period.
 
 ${input.kind === "experience" ? "Job" : "Project"} (context only): ${input.heading || "(untitled)"}

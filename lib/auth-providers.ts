@@ -26,8 +26,10 @@ export function socialProvidersConfig() {
   const microsoft = credentials("microsoft");
   return {
     ...(github && { github }),
-    ...(google && { google }),
+    // Students usually have a school and a personal account signed in; always
+    // show the account picker instead of silently using whichever is active.
+    ...(google && { google: { ...google, prompt: "select_account" as const } }),
     // "common" accepts personal Microsoft accounts and work/school (Entra ID) accounts.
-    ...(microsoft && { microsoft: { ...microsoft, tenantId: "common" } }),
+    ...(microsoft && { microsoft: { ...microsoft, tenantId: "common", prompt: "select_account" as const } }),
   };
 }

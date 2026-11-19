@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Wordmark } from "@/components/wordmark";
 
 export const metadata: Metadata = {
   title: "Privacy - Ascendume",
@@ -11,36 +12,35 @@ const UPDATED = "November 18, 2026";
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-      <div className="space-y-3 text-muted-foreground leading-relaxed">{children}</div>
+      <h2 className="text-[1.5625rem] font-extrabold text-ink">{title}</h2>
+      <div className="space-y-3 text-ink-soft leading-relaxed">{children}</div>
     </section>
   );
 }
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-surface text-ink">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-10">
-        <div className="space-y-3">
-          <Link href="/" className="font-bold text-lg tracking-tighter">
-            ascendume
-          </Link>
-          <h1 className="text-4xl font-bold tracking-tight">Privacy</h1>
-          <p className="text-muted-foreground">
+        <div className="space-y-4">
+          <Wordmark />
+          <div className="h-6" aria-hidden />
+          <h1 className="text-[3.052rem] font-extrabold leading-none text-ink">Privacy</h1>
+          <p className="text-lg leading-relaxed text-ink-soft">
             The short version: we store what you need to keep your resumes, your resume text goes to OpenAI only when
             you click an AI feature, nothing is used for training, and you can delete everything yourself.
           </p>
-          <p className="text-xs text-muted-foreground">Last updated {UPDATED}</p>
+          <p className="text-sm text-ink-soft">Last updated {UPDATED}</p>
         </div>
 
         <Section title="What we store">
           <p>
-            <strong className="text-foreground">If you don&apos;t have an account,</strong> your resume stays in your
+            <strong className="text-ink">If you don&apos;t have an account,</strong> your resume stays in your
             browser. We don&apos;t receive it. The automatic review checks and the live preview run in your browser
             too.
           </p>
           <p>
-            <strong className="text-foreground">If you have an account,</strong> we store:
+            <strong className="text-ink">If you have an account,</strong> we store:
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>your name and email, and either a hashed password or the ID of the GitHub, Google or Microsoft account you sign in with;</li>
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
         <Section title="Deleting your data">
           <p>
             Signed in, go to{" "}
-            <Link href="/account" className="text-primary hover:underline">
+            <Link href="/account" className="font-semibold text-brand hover:underline">
               Account
             </Link>{" "}
             and choose <em>Delete my account and data</em>. That removes your account, resumes, uploaded PDFs, sign-in
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
         <Section title="Questions">
           <p>
             Open an issue on{" "}
-            <a href="https://github.com/davisernst04/ascendume/issues" className="text-primary hover:underline">
+            <a href="https://github.com/davisernst04/ascendume/issues" className="font-semibold text-brand hover:underline">
               GitHub
             </a>
             .

@@ -36,6 +36,13 @@
       "when": 1795044723226,
       "tag": "0004_analytics_events",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795048088593,
+      "tag": "0005_account_token_fields",
+      "breakpoints": true
     }
   ]
 }

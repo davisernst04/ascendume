@@ -7,7 +7,7 @@ const RULES: { match: RegExp; question: string }[] = [
   { match: /\b(raise|fundrais|sold|sales|revenue|grant|budget)/i, question: "Roughly how much money or how many sales were involved?" },
   { match: /\b(research|analy|study|experiment|survey|test)/i, question: "Roughly how much data, how many samples or participants, or what result did you get?" },
   { match: /\b(event|workshop|hackathon|outreach|recruit|volunteer)/i, question: "Roughly how many people attended, joined, or were helped?" },
-  { match: /\b(built|build|develop|creat|design|launch|ship|implement|wrote|code|program|app|website|tool|bot)/i, question: "Roughly how many people used it, or how much time or work did it save?" },
+  { match: /\b(built|build|develop|creat|design|launch|ship|implement|wrote|code|program|add|integrat|deploy|migrat|app|website|tool|bot|feature)/i, question: "Roughly how many people used it, or how much time or work did it save?" },
 ];
 
 const FALLBACK = "Is there a number that shows the size of this: users, people, hours saved, % improvement, or how often?";

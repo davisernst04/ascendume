@@ -159,7 +159,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
 
   const addEducation = (edu?: Partial<Education>) => {
     const newEdu: Education = {
-      id: Date.now().toString(),
+      id: edu?.id || crypto.randomUUID(),
       institution: edu?.institution || "",
       degree: edu?.degree || "",
       field: edu?.field || "",
@@ -241,7 +241,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
 
   const addCertification = (cert?: Partial<Certification>) => {
     const newCert: Certification = {
-      id: Date.now().toString(),
+      id: cert?.id || crypto.randomUUID(),
       name: cert?.name || "",
       issuer: cert?.issuer || "",
       date: cert?.date || "",

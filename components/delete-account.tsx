@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { fieldClass } from "@/components/ui/input";
 import { clearDraft } from "@/lib/resume-draft";
 
 const CONFIRM = "delete";
@@ -45,25 +46,25 @@ export function DeleteAccount() {
   };
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm" htmlFor="confirm-delete">
-        Type <span className="font-mono font-semibold">{CONFIRM}</span> to confirm
+    <div className="flex max-w-sm flex-col gap-3">
+      <label className="text-sm text-ink" htmlFor="confirm-delete">
+        Type <span className="font-bold">{CONFIRM}</span> to confirm
       </label>
       <input
         id="confirm-delete"
-        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30"
+        className={`${fieldClass} h-10`}
         value={typed}
         onChange={(e) => setTyped(e.target.value)}
         autoComplete="off"
         disabled={busy}
       />
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}
-      <Button variant="destructive" disabled={busy || typed.trim().toLowerCase() !== CONFIRM} onClick={remove} className="gap-2">
-        {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+      <Button variant="destructive" disabled={busy || typed.trim().toLowerCase() !== CONFIRM} onClick={remove} className="self-start">
+        {busy && <Loader2 className="animate-spin" aria-hidden />}
         Delete my account and data
       </Button>
     </div>

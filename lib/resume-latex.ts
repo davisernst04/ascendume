@@ -24,11 +24,22 @@ function e(s: string | undefined | null): string {
   return escapeLatex(s ?? "");
 }
 
+/** A bare domain like "github.com/you": no scheme, no spaces, a dot before any path. */
+const BARE_DOMAIN = /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i;
+
+/**
+ * Returns a link target safe to put in \href, or "" if the value can't be a
+ * link. Bare domains ("linkedin.com/in/you") get https:// so they stay clickable.
+ */
 export function sanitizeUrl(raw: string | undefined | null): string {
   if (!raw) return "";
   const trimmed = raw.trim();
-  if (!/^(https?:\/\/|mailto:)/i.test(trimmed)) return "";
-  return trimmed.replace(/[{}\\]/g, "");
+  const url = /^(https?:\/\/|mailto:)/i.test(trimmed)
+    ? trimmed
+    : BARE_DOMAIN.test(trimmed)
+      ? `https://${trimmed}`
+      : "";
+  return url.replace(/[{}\\]/g, "");
 }
 
 /** Splits a newline-separated bullet field into bullet texts, stripping leading •, -, or *. */

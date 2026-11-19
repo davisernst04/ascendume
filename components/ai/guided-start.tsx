@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Briefcase, FolderKanban, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useResume } from "@/lib/resume-context";
+import { useSession } from "@/lib/auth-client";
 
 interface GuidedStartProps {
   /** Show even if the resume already has entries (arrived via "Build one with AI"). */
@@ -15,6 +16,7 @@ interface GuidedStartProps {
 /** The entry point to the guided build: pick a job or project, then answer questions about it. */
 export function GuidedStart({ forceOpen, onStart }: GuidedStartProps) {
   const { resumeData, addExperience, addProject } = useResume();
+  const { data: session, isPending } = useSession();
   const [dismissed, setDismissed] = useState(false);
   const empty = resumeData.experience.length === 0 && resumeData.projects.length === 0;
   if (dismissed || !(forceOpen || empty)) return null;
@@ -28,29 +30,32 @@ export function GuidedStart({ forceOpen, onStart }: GuidedStartProps) {
   };
 
   return (
-    <div className="relative rounded-xl border border-primary/30 bg-primary/5 p-5 space-y-3">
-      <button
-        type="button"
+    <aside className="relative rounded-lg border border-brand/30 bg-brand-wash/60 p-4 pr-12" aria-labelledby="guided-start-h">
+      <Button
+        variant="ghost"
+        size="icon-sm"
         onClick={() => setDismissed(true)}
-        aria-label="Dismiss"
-        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+        aria-label="Hide this"
+        className="absolute right-2 top-2"
       >
-        <X className="h-4 w-4" />
-      </button>
-      <h2 className="text-lg font-semibold">Build it by answering questions</h2>
-      <p className="text-sm text-muted-foreground">
-        Pick something you&apos;ve done, answer a few plain questions about it, and get bullets drafted from your
-        answers. Nothing gets added that you didn&apos;t say. Class projects, hackathons, clubs, labs and part-time
-        jobs all count.
+        <X />
+      </Button>
+      <h2 id="guided-start-h" className="text-lg font-bold leading-snug text-ink">
+        Not sure what to write? Answer questions instead.
+      </h2>
+      <p className="mt-1 max-w-prose text-[0.9375rem] leading-snug text-ink-soft">
+        Pick something you&apos;ve done and answer a few plain questions about it. You get bullets drafted only from
+        what you said. Class projects, hackathons, clubs, labs and part-time jobs all count.
+        {!isPending && !session?.user && " Drafting uses AI, so it needs a free account. What you've typed is kept when you sign up."}
       </p>
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" className="gap-1.5" onClick={() => start("experience")}>
-          <Briefcase className="h-3.5 w-3.5" /> A job, internship or role
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => start("experience")}>
+          A job, internship or role
         </Button>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => start("projects")}>
-          <FolderKanban className="h-3.5 w-3.5" /> A project
+        <Button size="sm" variant="outline" onClick={() => start("projects")}>
+          A project
         </Button>
       </div>
-    </div>
+    </aside>
   );
 }

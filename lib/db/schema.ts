@@ -39,6 +39,10 @@ export const account = pgTable("account", {
   accessToken: text("accessToken"),
   refreshToken: text("refreshToken"),
   idToken: text("idToken"),
+  accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
+  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+  scope: text("scope"),
+  // Pre-1.7 better-auth column, no longer written. Kept so older deploys keep working.
   expiresAt: timestamp("expiresAt"),
   password: text("password"),
   createdAt: timestamp("createdAt").notNull(),
