@@ -1,271 +1,354 @@
 // components/ResumeBuilder.tsx
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  User,
-  Briefcase,
-  GraduationCap,
-  Code,
-  FolderKanban,
-  Award,
-  Plus,
-  Trash2,
-  GripVertical,
-  ChevronDown,
-  ChevronUp,
-  Download,
-  Loader2,
-  Sparkles,
-  Eye,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Suspense } from "react";
-import { ResumeProvider, useResume } from "@/lib/resume-context";
-import { useSidebar } from "@/components/sidebar-context";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useResumePersistence } from "@/lib/use-resume-persistence";
+import { AlertCircle, Check, ChevronDown, Download, Loader2, PenLine } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ResumeProvider, useResume, type ResumeData } from "@/lib/resume-context";
+import { useResumePersistence, type SaveState } from "@/lib/use-resume-persistence";
+import { useSession } from "@/lib/auth-client";
+import { buildLatex } from "@/lib/resume-latex";
+import { useReview } from "@/lib/review/use-review";
+import { ReviewPanel } from "@/components/review/review-panel";
+import type { CompileResult } from "@/components/latex-pdf-preview";
+import { cn } from "@/lib/utils";
+import { GuidedStart } from "@/components/ai/guided-start";
+import { track } from "@/lib/analytics/track";
+import { SECTIONS, SectionEditor, type SectionType } from "@/components/builder/section-editors";
+import { HEADER_SLOT_ID } from "@/components/app-header";
 
-const LatexPdfPreview = dynamic(
-  () => import("./latex-pdf-preview").then((m) => m.LatexPdfPreview),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm gap-2">
-        <Loader2 className="w-4 h-4 animate-spin" />
-        Loading PDF viewer...
-      </div>
-    ),
-  }
-);
+const LatexPdfPreview = dynamic(() => import("./latex-pdf-preview").then((m) => m.LatexPdfPreview), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-64 items-center justify-center gap-2 text-sm text-ink-soft">
+      <Loader2 className="size-4 animate-spin" aria-hidden />
+      Loading the page viewer…
+    </div>
+  ),
+});
 
-type SectionType =
-  | "personal"
-  | "experience"
-  | "education"
-  | "skills"
-  | "projects"
-  | "certifications";
-
-interface Section {
-  id: string;
-  type: SectionType;
-  title: string;
-  expanded: boolean;
-}
-
-const sectionIcons: Record<
-  SectionType,
-  React.ComponentType<{ className?: string }>
-> = {
-  personal: User,
-  experience: Briefcase,
-  education: GraduationCap,
-  skills: Code,
-  projects: FolderKanban,
-  certifications: Award,
-};
-
-const defaultSections: Section[] = [
-  { id: "1", type: "personal", title: "Personal Info", expanded: true },
-  { id: "2", type: "experience", title: "Work Experience", expanded: false },
-  { id: "3", type: "education", title: "Education", expanded: false },
-  { id: "4", type: "skills", title: "Skills", expanded: false },
-  { id: "5", type: "projects", title: "Projects", expanded: false },
-  { id: "6", type: "certifications", title: "Certifications", expanded: false },
-];
+/** Phones show one of these at a time; wider screens show the editor beside the desk. */
+type View = "edit" | "page" | "review";
+type DeskTab = "page" | "review";
 
 function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
-  const { resumeData, setResumeData, updateTitle } = useResume();
-  const { isOpen: sidebarOpen } = useSidebar();
-  const router = useRouter();
+  const { resumeData, updateTitle } = useResume();
   const searchParams = useSearchParams();
 
-  const tabParam = searchParams.get("tab") as SectionType | null;
-  const initialSection = defaultSections.find((s) => s.type === tabParam) ?? defaultSections[0];
-
-  const [enhancing, setEnhancing] = useState(false);
-  const [sections, setSections] = useState<Section[]>(
-    defaultSections.map((s) => ({ ...s, expanded: s.id === initialSection.id }))
+  const tabParam = searchParams.get("tab");
+  const [active, setActive] = useState<SectionType>(
+    SECTIONS.find((s) => s.type === tabParam)?.type ??
+      // "Build one with AI" lands where the guided interview starts.
+      (searchParams.get("guided") === "1" ? "experience" : SECTIONS[0].type)
   );
-  const [activeSection, setActiveSection] = useState<string>(initialSection.id);
+  const [view, setView] = useState<View>("edit");
+  const [deskTab, setDeskTab] = useState<DeskTab>("page");
 
   // Holds the latest generated PDF blob for download
   const pdfBlobRef = useRef<Blob | null>(null);
+  const [hasPdf, setHasPdf] = useState(false);
 
-  useResumePersistence(resumeId);
+  const { isLoaded, saveState } = useResumePersistence(resumeId);
+  const { data: session } = useSession();
+  const signedIn = Boolean(session?.user);
 
-  const handleEnhanceAll = useCallback(async () => {
-    setEnhancing(true);
-    try {
-      const res = await fetch("/api/ai/enhance-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(resumeData),
-      });
-      if (!res.ok) throw new Error("Enhancement failed");
-      const enhanced = await res.json();
-      setResumeData(enhanced);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to enhance resume. Please try again.");
-    } finally {
-      setEnhancing(false);
+  // The entry the guided start just added, whose interview opens straight away.
+  const [guidedEntryId, setGuidedEntryId] = useState<string | null>(null);
+  const [compiled, setCompiled] = useState<CompileResult | null>(null);
+  const review = useReview({ data: resumeData, loaded: isLoaded, compiled, signedIn });
+
+  const showDesk = useCallback((tab: DeskTab) => {
+    setDeskTab(tab);
+    setView(tab);
+  }, []);
+
+  const startReview = useCallback(() => {
+    showDesk("review");
+    review.request();
+  }, [review, showDesk]);
+
+  const goToSection = useCallback(
+    (type: SectionType) => {
+      setActive(type);
+      setView("edit");
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", type);
+      params.delete("review");
+      replaceQuery(params);
+    },
+    [searchParams]
+  );
+
+  // resume_started (build): the first edit to a new resume after it has loaded.
+  const startRef = useRef<{ loadedData: ResumeData | null; tracked: boolean }>({ loadedData: null, tracked: false });
+  useEffect(() => {
+    const start = startRef.current;
+    if (resumeId !== "new" || !isLoaded || start.tracked) return;
+    if (start.loadedData === null) {
+      start.loadedData = resumeData;
+    } else if (start.loadedData !== resumeData) {
+      start.tracked = true;
+      track("resume_started", { route: "build" });
     }
-  }, [resumeData, setResumeData]);
+  }, [resumeId, isLoaded, resumeData]);
+
+  // Arriving from the review route (/<id>?review=1): the user asked for a review, so run one once loaded.
+  const autoReviewedRef = useRef(false);
+  useEffect(() => {
+    if (!isLoaded || autoReviewedRef.current || searchParams.get("review") !== "1") return;
+    autoReviewedRef.current = true;
+    startReview();
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("review");
+    replaceQuery(params);
+  }, [isLoaded, searchParams, startReview]);
+
+  // A title left at the default makes every download "My-Resume.pdf"; use the person's name instead.
+  const fileBase = toFileName(
+    resumeData.title.trim() === "My Resume" && resumeData.personalInfo.fullName.trim()
+      ? `${resumeData.personalInfo.fullName} Resume`
+      : resumeData.title
+  );
 
   const handleDownload = useCallback(() => {
     if (!pdfBlobRef.current) return;
-    const url = URL.createObjectURL(pdfBlobRef.current);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${resumeData.title || "resume"}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [resumeData.title]);
+    downloadBlob(pdfBlobRef.current, `${fileBase}.pdf`);
+    track("exported", { format: "pdf" });
+  }, [fileBase]);
 
-  const toggleSection = (id: string) => {
-    setSections(
-      sections.map((s) => (s.id === id ? { ...s, expanded: !s.expanded } : s))
-    );
-  };
+  const handleDownloadTex = useCallback(() => {
+    const tex = buildLatex(resumeData);
+    downloadBlob(new Blob([tex], { type: "application/x-tex" }), `${fileBase}.tex`);
+    track("exported", { format: "tex" });
+  }, [resumeData, fileBase]);
+
+  const reviewBusy = review.status === "running" || review.status === "waiting-for-preview";
+  const findingCount = review.result?.findingCount ?? 0;
+  const section = SECTIONS.find((s) => s.type === active) ?? SECTIONS[0];
+
+  // The desk measures itself so the whole page fits in it without scrolling.
+  const deskRef = useRef<HTMLDivElement>(null);
+  const desk = useElementSize(deskRef);
+  const pageWidth = Math.floor(
+    Math.max(240, Math.min(760, desk.width - 48, (desk.height - 40 - PAGER_HEIGHT) / PAGE_RATIO))
+  );
+
+  // On wider screens the title and actions live in the app header, freeing a row for the form and page.
+  const headerSlot = useSyncExternalStore(
+    noopSubscribe,
+    () => document.getElementById(HEADER_SLOT_ID),
+    () => null
+  );
+
+  const toolbar = (
+    <>
+      <label className="group flex min-w-0 max-w-xs flex-1 items-center gap-2">
+        <span className="sr-only">Resume title</span>
+        <input
+          type="text"
+          value={resumeData.title}
+          onChange={(e) => updateTitle(e.target.value)}
+          className="font-display min-w-0 flex-1 truncate rounded-sm border-b border-transparent bg-transparent py-1 text-[1.125rem] font-bold text-ink outline-none transition-colors hover:border-rule-strong focus-visible:border-brand focus-visible:outline-none"
+          placeholder="Untitled resume"
+        />
+        <PenLine className="size-3.5 shrink-0 text-ink-soft opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+      </label>
+      <SaveStatus state={saveState} signedIn={signedIn} loaded={isLoaded} />
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <Button variant="marker" size="sm" onClick={startReview} disabled={reviewBusy}>
+          {reviewBusy && <Loader2 className="animate-spin" aria-hidden />}
+          Review
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" aria-label="Download">
+              <Download aria-hidden />
+              <span className="hidden sm:inline">Download</span>
+              <ChevronDown className="text-ink-soft" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuItem onSelect={handleDownload} disabled={!hasPdf} className="flex-col items-start gap-0.5">
+              <span className="font-semibold">PDF</span>
+              <span className="text-xs text-ink-soft">
+                {hasPdf ? "What you see on the page. Send this one." : "Available once the page is typeset."}
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleDownloadTex} className="flex-col items-start gap-0.5">
+              <span className="font-semibold">LaTeX source (.tex)</span>
+              <span className="text-xs text-ink-soft">To keep editing in Overleaf or any TeX editor.</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </>
+  );
+
+  const showGuidedStart = isLoaded && (active === "experience" || active === "projects");
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground">
-      {/* Section Tab Navbar */}
-      <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shrink-0">
-        <div className="px-4 h-12 flex items-center gap-1 overflow-x-auto">
-          <input
-            type="text"
-            value={resumeData.title}
-            onChange={(e) => updateTitle(e.target.value)}
-            className="bg-transparent border-none text-sm font-semibold focus:outline-none focus:ring-0 w-36 shrink-0 text-foreground"
-            placeholder="Resume title"
-            disabled={enhancing}
-          />
-          <div className="h-4 w-px bg-border shrink-0 mx-2" />
-          {sections.map((section) => {
-            const Icon = sectionIcons[section.type];
-            return (
-              <button
-                key={section.id}
-                onClick={() => {
-                  setActiveSection(section.id);
-                  setSections((prev) =>
-                    prev.map((s) =>
-                      s.id === section.id ? { ...s, expanded: true } : s
-                    )
-                  );
-                  const params = new URLSearchParams(searchParams.toString());
-                  params.set("tab", section.type);
-                  router.replace(`?${params.toString()}`);
+    <div className="flex h-full flex-col bg-surface text-ink">
+      {headerSlot && createPortal(toolbar, headerSlot)}
+      {/* Phones (and before the header slot is found): the toolbar as its own row */}
+      <div className={cn("flex h-12 shrink-0 items-center gap-3 border-b border-rule px-4", headerSlot && "md:hidden")}>
+        {toolbar}
+      </div>
+
+      {/* Phone view switch */}
+      <div className="flex shrink-0 border-b border-rule px-4 lg:hidden" role="tablist" aria-label="Builder view">
+        {(
+          [
+            ["edit", "Edit"],
+            ["page", "Page"],
+            ["review", "Review"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            onClick={() => (v === "edit" ? setView("edit") : showDesk(v))}
+            className={cn(
+              "-mb-px border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors",
+              view === v ? "border-ink text-ink" : "border-transparent text-ink-soft hover:text-ink"
+            )}
+          >
+            {label}
+            {v === "review" && findingCount > 0 && <CountBadge n={findingCount} muted={review.outdated} />}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex min-h-0 flex-1">
+        {/* Section list (wide screens) */}
+        <nav aria-label="Resume sections" className="hidden w-48 shrink-0 overflow-y-auto border-r border-rule py-5 pl-4 pr-3 xl:block">
+          <ul className="flex flex-col gap-0.5">
+            {SECTIONS.map((s) => (
+              <li key={s.type}>
+                <button
+                  type="button"
+                  onClick={() => goToSection(s.type)}
+                  aria-current={active === s.type ? "true" : undefined}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-[0.9375rem] font-medium transition-colors",
+                    active === s.type ? "bg-mist text-ink" : "text-ink-soft hover:bg-mist/50 hover:text-ink"
+                  )}
+                >
+                  {s.title}
+                  <EntryCount type={s.type} data={resumeData} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Editor */}
+        <div className={cn("min-w-0 flex-1 overflow-y-auto", view !== "edit" && "hidden lg:block")}>
+          {/* Section tabs (narrower screens) */}
+          <div className="sticky top-0 z-10 overflow-x-auto border-b border-rule bg-surface/95 backdrop-blur xl:hidden">
+            <div className="flex w-max gap-1 px-4 py-1.5 sm:px-6" role="tablist" aria-label="Resume sections">
+              {SECTIONS.map((s) => (
+                <button
+                  key={s.type}
+                  type="button"
+                  role="tab"
+                  aria-selected={active === s.type}
+                  onClick={() => goToSection(s.type)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[0.9375rem] font-medium transition-colors",
+                    active === s.type ? "bg-mist text-ink" : "text-ink-soft hover:text-ink"
+                  )}
+                >
+                  {s.title}
+                  <EntryCount type={s.type} data={resumeData} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-5 sm:px-6">
+            <header>
+              <h1 className="text-[1.625rem] font-bold leading-tight text-ink">{section.title}</h1>
+              <p className="max-w-prose text-[0.9375rem] text-ink-soft">{section.hint}</p>
+            </header>
+            {showGuidedStart && (
+              <GuidedStart
+                forceOpen={searchParams.get("guided") === "1"}
+                onStart={(s, entryId) => {
+                  setGuidedEntryId(entryId);
+                  goToSection(s);
                 }}
-                disabled={enhancing}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors shrink-0 ${
-                  activeSection === section.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {section.title}
-              </button>
-            );
-          })}
-          <div className="ml-auto flex items-center gap-2 shrink-0 pl-4">
-            <Button
-              size="sm"
-              variant="outline"
-              className="font-medium rounded-lg gap-2 h-8"
-              onClick={handleEnhanceAll}
-              disabled={enhancing}
-            >
-              {enhancing ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Enhancing…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Enhance with AI
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              className="font-bold shadow-lg shadow-primary/20 rounded-lg gap-2 h-8"
-              onClick={handleDownload}
-              disabled={enhancing}
-            >
-              <Download className="w-3.5 h-3.5" />
-              Download PDF
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="flex flex-1 min-h-0">
-        {/* Center Panel - Editor */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="max-w-2xl space-y-6">
-            {sections
-              .filter((s) => s.id === activeSection)
-              .map((section) => {
-                const Icon = sectionIcons[section.type];
-                return (
-                  <div
-                    key={section.id}
-                    className="bg-card border border-border rounded-xl overflow-hidden shadow-sm"
-                  >
-                    <div
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => toggleSection(section.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-5 h-5 text-primary" />
-                        <h2 className="font-semibold">{section.title}</h2>
-                      </div>
-                      {section.expanded ? (
-                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                      )}
-                    </div>
-                    {section.expanded && (
-                      <div className="p-4 pt-0 border-t border-border">
-                        <SectionEditor
-                          type={section.type}
-                          disabled={enhancing}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-
-        {/* Right Panel - PDF Preview */}
-        <div className={`overflow-y-auto hidden lg:block shrink-0 transition-all duration-300 ${sidebarOpen ? "w-[420px]" : "w-[612px]"}`}>
-          <div className="pl-2 pr-4 py-6">
-            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-              <div className="flex items-center gap-3 p-4 border-b border-border">
-                <Eye className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold">Live Preview</h3>
+              />
+            )}
+            {isLoaded ? (
+              <SectionEditor key={active} type={active} openInterviewFor={guidedEntryId} />
+            ) : (
+              <div className="flex items-center gap-2 py-8 text-sm text-ink-soft">
+                <Loader2 className="size-4 animate-spin" aria-hidden /> Opening your resume…
               </div>
-              <div className="p-4">
-                <LatexPdfPreview
-                  data={resumeData}
-                  onPdfReady={(blob) => { pdfBlobRef.current = blob; }}
-                  width={sidebarOpen ? 356 : 548}
-                />
+            )}
+          </div>
+        </div>
+
+        {/* The desk: the page, or the review notes beside it */}
+        <div
+          className={cn(
+            "flex min-w-0 flex-col bg-mist lg:w-[clamp(380px,42vw,780px)] lg:shrink-0 lg:border-l lg:border-rule",
+            view === "edit" ? "hidden lg:flex" : "flex flex-1 lg:flex-none"
+          )}
+        >
+          <div className="flex h-11 shrink-0 items-center gap-1 border-b border-rule px-4" role="tablist" aria-label="Desk">
+            <span className="hidden items-center gap-1 lg:flex">
+              <DeskTabButton active={deskTab === "page"} onClick={() => showDesk("page")}>
+                Page
+              </DeskTabButton>
+              <DeskTabButton active={deskTab === "review"} onClick={() => showDesk("review")}>
+                Review notes
+                {findingCount > 0 && <CountBadge n={findingCount} muted={review.outdated} />}
+              </DeskTabButton>
+            </span>
+            <PageCount pages={compiled?.pages ?? null} className="lg:ml-auto" />
+          </div>
+
+          <div ref={deskRef} className="relative min-h-0 flex-1">
+            {/* The preview stays mounted while the review is shown: the review needs its page count. */}
+            <div className={cn("flex h-full flex-col items-center justify-center p-5", deskTab !== "page" && "hidden")}>
+              <LatexPdfPreview
+                data={resumeData}
+                onPdfReady={(blob) => {
+                  pdfBlobRef.current = blob;
+                  setHasPdf(true);
+                }}
+                onCompiled={setCompiled}
+                width={pageWidth}
+              />
+            </div>
+            {deskTab === "review" && (
+              <div className="absolute inset-0 overflow-y-auto">
+                <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
+                  <ReviewPanel
+                    status={review.status}
+                    result={review.result}
+                    error={review.error}
+                    outdated={review.outdated}
+                    signedIn={signedIn}
+                    onRun={review.request}
+                    onGoTo={goToSection}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -273,618 +356,138 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   );
 }
 
-function SectionEditor({
-  type,
-  disabled,
-}: {
-  type: SectionType;
-  disabled: boolean;
-}) {
-  switch (type) {
-    case "personal":
-      return <PersonalInfoEditor disabled={disabled} />;
-    case "experience":
-      return <ExperienceEditor disabled={disabled} />;
-    case "education":
-      return <EducationEditor disabled={disabled} />;
-    case "skills":
-      return <SkillsEditor disabled={disabled} />;
-    case "projects":
-      return <ProjectsEditor disabled={disabled} />;
-    case "certifications":
-      return <CertificationsEditor disabled={disabled} />;
-    default:
-      return null;
-  }
-}
+/** Letter paper, and the pager row the preview adds under a multi-page resume. */
+const PAGE_RATIO = 11 / 8.5;
+const PAGER_HEIGHT = 44;
 
-const inputClass =
-  "w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-const labelClass = "block text-sm font-medium mb-1.5 text-foreground";
+const noopSubscribe = () => () => {};
 
-function PersonalInfoEditor({ disabled }: { disabled: boolean }) {
-  const { resumeData, updatePersonalInfo } = useResume();
-  const { personalInfo } = resumeData;
-
+function DeskTabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <div className="space-y-4 mt-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass}>Full Name</label>
-          <input
-            type="text"
-            className={inputClass}
-            placeholder="John Doe"
-            value={personalInfo.fullName}
-            onChange={(e) => updatePersonalInfo({ fullName: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Email</label>
-          <input
-            type="email"
-            className={inputClass}
-            placeholder="john@example.com"
-            value={personalInfo.email}
-            onChange={(e) => updatePersonalInfo({ email: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass}>Phone</label>
-          <input
-            type="tel"
-            className={inputClass}
-            placeholder="+1 (555) 123-4567"
-            value={personalInfo.phone}
-            onChange={(e) => updatePersonalInfo({ phone: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Location</label>
-          <input
-            type="text"
-            className={inputClass}
-            placeholder="San Francisco, CA"
-            value={personalInfo.location}
-            onChange={(e) => updatePersonalInfo({ location: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
-      </div>
-      <div>
-        <label className={labelClass}>Professional Summary</label>
-        <textarea
-          rows={4}
-          className={`${inputClass} resize-none`}
-          placeholder="Write a brief summary of your professional background..."
-          value={personalInfo.summary}
-          onChange={(e) => updatePersonalInfo({ summary: e.target.value })}
-          disabled={disabled}
-        />
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className={labelClass}>Website</label>
-          <input
-            type="url"
-            className={inputClass}
-            placeholder="https://yoursite.com"
-            value={personalInfo.website}
-            onChange={(e) => updatePersonalInfo({ website: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>LinkedIn</label>
-          <input
-            type="text"
-            className={inputClass}
-            placeholder="linkedin.com/in/..."
-            value={personalInfo.linkedin}
-            onChange={(e) => updatePersonalInfo({ linkedin: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>GitHub</label>
-          <input
-            type="text"
-            className={inputClass}
-            placeholder="github.com/..."
-            value={personalInfo.github}
-            onChange={(e) => updatePersonalInfo({ github: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
-      </div>
-    </div>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors",
+        active ? "bg-surface text-ink" : "text-ink-soft hover:text-ink"
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
-function ExperienceEditor({ disabled }: { disabled: boolean }) {
-  const { resumeData, addExperience, updateExperience, removeExperience } =
-    useResume();
-  const { experience } = resumeData;
-
+function CountBadge({ n, muted }: { n: number; muted: boolean }) {
   return (
-    <div className="space-y-4 mt-4">
-      {experience.map((exp, index) => (
-        <div
-          key={exp.id}
-          className="p-4 border border-border rounded-lg bg-background"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">
-                {exp.position || `Experience ${index + 1}`}
-              </span>
-            </div>
-            <button
-              onClick={() => removeExperience(exp.id)}
-              disabled={disabled}
-              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Company</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Company name"
-                value={exp.company}
-                onChange={(e) =>
-                  updateExperience(exp.id, { company: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Position</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Job title"
-                value={exp.position}
-                onChange={(e) =>
-                  updateExperience(exp.id, { position: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-          </div>
-          <div className="mt-4">
-            <label className={labelClass}>Location</label>
-            <input
-              type="text"
-              className={inputClass}
-              placeholder="San Francisco, CA"
-              value={exp.location}
-              onChange={(e) =>
-                updateExperience(exp.id, { location: e.target.value })
-              }
-              disabled={disabled}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div>
-              <label className={labelClass}>Start Date</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Jan 2020"
-                value={exp.startDate}
-                onChange={(e) =>
-                  updateExperience(exp.id, { startDate: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>End Date</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Present"
-                value={exp.endDate}
-                onChange={(e) =>
-                  updateExperience(exp.id, { endDate: e.target.value })
-                }
-                disabled={disabled || exp.current}
-              />
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="rounded border-border accent-primary"
-                  checked={exp.current}
-                  onChange={(e) =>
-                    updateExperience(exp.id, { current: e.target.checked })
-                  }
-                  disabled={disabled}
-                />
-                Current
-              </label>
-            </div>
-          </div>
-          <div className="mt-4">
-            <label className={labelClass}>Bullet Points</label>
-            <textarea
-              rows={4}
-              className={`${inputClass} resize-none font-mono text-sm`}
-              placeholder={"• Led development of new feature...\n• Improved performance by 40%...\n• Mentored junior engineers..."}
-              value={exp.bullets}
-              onChange={(e) =>
-                updateExperience(exp.id, { bullets: e.target.value })
-              }
-              disabled={disabled}
-            />
-          </div>
-        </div>
-      ))}
-      <button
-        onClick={() => addExperience()}
-        disabled={disabled}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Plus className="w-4 h-4" /> Add Experience
-      </button>
-    </div>
+    <span
+      className={cn(
+        "ml-1.5 inline-grid min-w-5 place-items-center rounded-full px-1.5 text-xs font-bold tabular-nums",
+        muted ? "bg-mist-deep text-ink-soft" : "bg-brand text-white dark:text-surface"
+      )}
+    >
+      {n}
+    </span>
   );
 }
 
-function EducationEditor({ disabled }: { disabled: boolean }) {
-  const { resumeData, addEducation, updateEducation, removeEducation } =
-    useResume();
-  const { education } = resumeData;
-
+/** How many pages the typeset resume runs to, flagged past one. */
+function PageCount({ pages, className }: { pages: number | null; className?: string }) {
+  if (!pages) return null;
+  if (pages === 1) return <p className={cn("text-sm text-ink-soft", className)}>Fits on one page</p>;
   return (
-    <div className="space-y-4 mt-4">
-      {education.map((edu, index) => (
-        <div
-          key={edu.id}
-          className="p-4 border border-border rounded-lg bg-background"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">
-                {edu.institution || `Education ${index + 1}`}
-              </span>
-            </div>
-            <button
-              onClick={() => removeEducation(edu.id)}
-              disabled={disabled}
-              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Institution</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="University name"
-                value={edu.institution}
-                onChange={(e) =>
-                  updateEducation(edu.id, { institution: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Degree</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Bachelor of Science"
-                value={edu.degree}
-                onChange={(e) =>
-                  updateEducation(edu.id, { degree: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div>
-              <label className={labelClass}>Field of Study</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Computer Science"
-                value={edu.field}
-                onChange={(e) =>
-                  updateEducation(edu.id, { field: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>GPA</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="3.8/4.0"
-                value={edu.gpa}
-                onChange={(e) =>
-                  updateEducation(edu.id, { gpa: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Graduation</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="May 2022"
-                value={edu.graduationDate}
-                onChange={(e) =>
-                  updateEducation(edu.id, { graduationDate: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-          </div>
-        </div>
-      ))}
-      <button
-        onClick={() => addEducation()}
-        disabled={disabled}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Plus className="w-4 h-4" /> Add Education
-      </button>
-    </div>
+    <p className={cn("text-sm font-semibold text-danger", className)}>
+      Runs to {pages} pages. Aim for one.
+    </p>
   );
 }
 
-function SkillsEditor({ disabled }: { disabled: boolean }) {
-  const { resumeData, updateSkills } = useResume();
-  const { skills } = resumeData;
-
+function EntryCount({ type, data }: { type: SectionType; data: ResumeData }) {
+  const n =
+    type === "experience"
+      ? data.experience.length
+      : type === "education"
+        ? data.education.length
+        : type === "projects"
+          ? data.projects.length
+          : type === "skills"
+            ? data.skills.length
+            : type === "certifications"
+              ? data.certifications.length
+              : 0;
+  if (!n) return null;
   return (
-    <div className="space-y-4 mt-4">
-      <div>
-        <label className={labelClass}>Technical Skills</label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="JavaScript, TypeScript, React, Node.js, Python"
-          value={skills.technical}
-          onChange={(e) => updateSkills({ technical: e.target.value })}
-          disabled={disabled}
-        />
-      </div>
-      <div>
-        <label className={labelClass}>Frameworks & Libraries</label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="Next.js, Express, Tailwind CSS, PostgreSQL"
-          value={skills.frameworks}
-          onChange={(e) => updateSkills({ frameworks: e.target.value })}
-          disabled={disabled}
-        />
-      </div>
-      <div>
-        <label className={labelClass}>Tools & Platforms</label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="Git, Docker, AWS, Vercel, Figma"
-          value={skills.tools}
-          onChange={(e) => updateSkills({ tools: e.target.value })}
-          disabled={disabled}
-        />
-      </div>
-    </div>
+    <span className="text-xs font-medium tabular-nums text-ink-soft" aria-label={`${n} ${n === 1 ? "entry" : "entries"}`}>
+      {n}
+    </span>
   );
 }
 
-function ProjectsEditor({ disabled }: { disabled: boolean }) {
-  const { resumeData, addProject, updateProject, removeProject } = useResume();
-  const { projects } = resumeData;
-
+function SaveStatus({ state, signedIn, loaded }: { state: SaveState; signedIn: boolean; loaded: boolean }) {
+  if (!loaded) return null;
+  const content =
+    state === "error" ? (
+      <span className="flex items-center gap-1 text-danger">
+        <AlertCircle className="size-3.5" aria-hidden /> Not saved. We&apos;ll retry when you next edit.
+      </span>
+    ) : state === "saving" ? (
+      <span>Saving…</span>
+    ) : (
+      <span className="flex items-center gap-1">
+        <Check className="size-3.5" aria-hidden /> {signedIn ? "Saved" : "Saved in this browser"}
+      </span>
+    );
   return (
-    <div className="space-y-4 mt-4">
-      {projects.map((proj, index) => (
-        <div
-          key={proj.id}
-          className="p-4 border border-border rounded-lg bg-background"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">
-                {proj.name || `Project ${index + 1}`}
-              </span>
-            </div>
-            <button
-              onClick={() => removeProject(proj.id)}
-              disabled={disabled}
-              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Project Name</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Project name"
-                value={proj.name}
-                onChange={(e) =>
-                  updateProject(proj.id, { name: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>URL</label>
-              <input
-                type="url"
-                className={inputClass}
-                placeholder="https://project.com"
-                value={proj.url}
-                onChange={(e) =>
-                  updateProject(proj.id, { url: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-          </div>
-          <div className="mt-4">
-            <label className={labelClass}>Technologies</label>
-            <input
-              type="text"
-              className={inputClass}
-              placeholder="React, Node.js, PostgreSQL, AWS"
-              value={proj.technologies}
-              onChange={(e) =>
-                updateProject(proj.id, { technologies: e.target.value })
-              }
-              disabled={disabled}
-            />
-          </div>
-          <div className="mt-4">
-            <label className={labelClass}>Description</label>
-            <textarea
-              rows={3}
-              className={`${inputClass} resize-none`}
-              placeholder="Brief description of the project..."
-              value={proj.description}
-              onChange={(e) =>
-                updateProject(proj.id, { description: e.target.value })
-              }
-              disabled={disabled}
-            />
-          </div>
-        </div>
-      ))}
-      <button
-        onClick={() => addProject()}
-        disabled={disabled}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Plus className="w-4 h-4" /> Add Project
-      </button>
-    </div>
+    <p role="status" className="hidden min-w-0 truncate text-xs text-ink-soft md:block">
+      {content}
+    </p>
   );
 }
 
-function CertificationsEditor({ disabled }: { disabled: boolean }) {
-  const {
-    resumeData,
-    addCertification,
-    updateCertification,
-    removeCertification,
-  } = useResume();
-  const { certifications } = resumeData;
+/** Tracks an element's size, keeping the last non-zero size while it is hidden. */
+function useElementSize(ref: React.RefObject<HTMLElement | null>) {
+  const [size, setSize] = useState({ width: 600, height: 800 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      const { clientWidth: width, clientHeight: height } = el;
+      if (width > 0 && height > 0) setSize((s) => (s.width === width && s.height === height ? s : { width, height }));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return size;
+}
 
-  return (
-    <div className="space-y-4 mt-4">
-      {certifications.map((cert, index) => (
-        <div
-          key={cert.id}
-          className="p-4 border border-border rounded-lg bg-background"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-              <span className="font-medium">
-                {cert.name || `Certification ${index + 1}`}
-              </span>
-            </div>
-            <button
-              onClick={() => removeCertification(cert.id)}
-              disabled={disabled}
-              className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Certification Name</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Certification name"
-                value={cert.name}
-                onChange={(e) =>
-                  updateCertification(cert.id, { name: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Issuing Organization</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Amazon Web Services"
-                value={cert.issuer}
-                onChange={(e) =>
-                  updateCertification(cert.id, { issuer: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className={labelClass}>Date</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="March 2024"
-                value={cert.date}
-                onChange={(e) =>
-                  updateCertification(cert.id, { date: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Credential URL</label>
-              <input
-                type="url"
-                className={inputClass}
-                placeholder="https://..."
-                value={cert.credentialUrl}
-                onChange={(e) =>
-                  updateCertification(cert.id, { credentialUrl: e.target.value })
-                }
-                disabled={disabled}
-              />
-            </div>
-          </div>
-        </div>
-      ))}
-      <button
-        onClick={() => addCertification()}
-        disabled={disabled}
-        className="w-full py-2.5 border border-dashed border-border rounded-lg text-muted-foreground hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Plus className="w-4 h-4" /> Add Certification
-      </button>
-    </div>
-  );
+/**
+ * Updates the query string without a navigation. Next 16 keeps useSearchParams
+ * in sync with history.replaceState, and skipping router.replace avoids a
+ * server round trip (and a route transition) on every tab switch.
+ */
+function replaceQuery(params: URLSearchParams) {
+  const query = params.toString();
+  window.history.replaceState(window.history.state, "", query ? `?${query}` : window.location.pathname);
+}
+
+/** "Jane's Resume (v2)" -> "Janes-Resume-v2"; never empty. */
+function toFileName(title: string): string {
+  const base = title.trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+  return base || "resume";
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export default function ResumeBuilder({ resumeId }: { resumeId?: string }) {

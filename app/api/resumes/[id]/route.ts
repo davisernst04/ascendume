@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { resumes, personalInfo, workExperience, education, skills, projects, certifications } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { Experience, Education, Project, Certification } from "@/lib/resume-context";
+import { resumes, personalInfo, workExperience, education, skillCategories, projects, certifications } from "@/lib/db/schema";
+import { eq, and, asc } from "drizzle-orm";
+import { Experience, Education, Project, Certification, SkillCategory } from "@/lib/resume-context";
+import { deleteUploadedFiles } from "@/lib/blob-files";
 
 // GET /api/resumes/[id] - Get a specific resume
 export async function GET(
@@ -24,11 +25,11 @@ export async function GET(
       where: and(eq(resumes.id, id), eq(resumes.userId, session.user.id)),
       with: {
         personalInfo: true,
-        workExperience: true,
-        education: true,
-        skills: true,
-        projects: true,
-        certifications: true,
+        workExperience: { orderBy: [asc(workExperience.order)] },
+        education: { orderBy: [asc(education.order)] },
+        skillCategories: { orderBy: [asc(skillCategories.order)] },
+        projects: { orderBy: [asc(projects.order)] },
+        certifications: { orderBy: [asc(certifications.order)] },
       },
     });
 
@@ -134,21 +135,18 @@ export async function PUT(
       }
     }
 
-    // Update skills
-    if (skillsData) {
-      const existingSkills = await db.query.skills.findFirst({
-        where: eq(skills.resumeId, id),
-      });
-      
-      if (existingSkills) {
-        await db.update(skills)
-          .set(skillsData)
-          .where(eq(skills.resumeId, id));
-      } else {
-        await db.insert(skills).values({
-          resumeId: id,
-          ...skillsData,
-        });
+    // Update skill categories (delete and recreate)
+    if (Array.isArray(skillsData)) {
+      await db.delete(skillCategories).where(eq(skillCategories.resumeId, id));
+      if (skillsData.length) {
+        await db.insert(skillCategories).values(
+          skillsData.map((cat: SkillCategory, index: number) => ({
+            resumeId: id,
+            label: cat.label ?? "",
+            items: cat.items ?? "",
+            order: index,
+          }))
+        );
       }
     }
 
@@ -217,7 +215,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Resume not found" }, { status: 404 });
     }
 
-    // Delete (cascade will handle related tables)
+    // Delete the uploaded PDF, then the resume (cascade handles related tables)
+    await deleteUploadedFiles([existing.originalFileUrl]);
     await db.delete(resumes).where(eq(resumes.id, id));
 
     return NextResponse.json({ success: true });

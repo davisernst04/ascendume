@@ -24,14 +24,26 @@ function e(s: string | undefined | null): string {
   return escapeLatex(s ?? "");
 }
 
-function sanitizeUrl(raw: string | undefined | null): string {
+/** A bare domain like "github.com/you": no scheme, no spaces, a dot before any path. */
+const BARE_DOMAIN = /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i;
+
+/**
+ * Returns a link target safe to put in \href, or "" if the value can't be a
+ * link. Bare domains ("linkedin.com/in/you") get https:// so they stay clickable.
+ */
+export function sanitizeUrl(raw: string | undefined | null): string {
   if (!raw) return "";
   const trimmed = raw.trim();
-  if (!/^(https?:\/\/|mailto:)/i.test(trimmed)) return "";
-  return trimmed.replace(/[{}\\]/g, "");
+  const url = /^(https?:\/\/|mailto:)/i.test(trimmed)
+    ? trimmed
+    : BARE_DOMAIN.test(trimmed)
+      ? `https://${trimmed}`
+      : "";
+  return url.replace(/[{}\\]/g, "");
 }
 
-function parseBullets(raw: string): string[] {
+/** Splits a newline-separated bullet field into bullet texts, stripping leading •, -, or *. */
+export function parseBullets(raw: string): string[] {
   return raw
     .split("\n")
     .map((l) => l.replace(/^[•\-*]\s*/, "").trim())
@@ -153,26 +165,20 @@ ${bulletBlock}`;
     \\resumeSubHeadingListEnd
 `;
 
-  // Skills
-  const skillLines: string[] = [];
-  if (data.skills.technical)
-    skillLines.push(
-      `     \\textbf{Languages}{: ${e(data.skills.technical)}} \\\\`
-    );
-  if (data.skills.frameworks)
-    skillLines.push(
-      `     \\textbf{Frameworks}{: ${e(data.skills.frameworks)}} \\\\`
-    );
-  if (data.skills.tools)
-    skillLines.push(
-      `     \\textbf{Developer Tools}{: ${e(data.skills.tools)}} \\\\`
+  // Skills — one `Label: items` row per category the user named
+  const skillLines = data.skills
+    .filter((c) => c.items.trim() !== "")
+    .map((c) =>
+      c.label.trim()
+        ? `     \\textbf{${e(c.label.trim())}}{: ${e(c.items.trim())}} \\\\`
+        : `     ${e(c.items.trim())} \\\\`
     );
   const skillsSection =
     skillLines.length === 0
       ? ""
       : `
-%-----------TECHNICAL SKILLS-----------
-\\section{Technical Skills}
+%-----------SKILLS-----------
+\\section{Skills}
  \\begin{itemize}[leftmargin=0.15in, label={}]
     \\small{\\item{
 ${skillLines.join("\n")}

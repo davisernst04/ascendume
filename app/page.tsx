@@ -2,8 +2,7 @@ import { getServerSession } from "@/lib/auth";
 import { headers } from "next/headers";
 import LandingPage from "./(marketing)/landing-page";
 import DashboardPage from "./(application)/dashboard-page";
-import { DashboardLayoutClient } from "@/components/dashboard-layout-client";
-import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { AppFrame } from "@/components/app-header";
 
 export default async function HomePage() {
   const session = await getServerSession({
@@ -15,8 +14,8 @@ export default async function HomePage() {
   }
 
   return (
-    <DashboardLayoutClient sidebar={<DashboardSidebar />}>
-      <DashboardPage />
-    </DashboardLayoutClient>
+    <AppFrame user={{ name: session.user.name, email: session.user.email }}>
+      <DashboardPage userId={session.user.id} />
+    </AppFrame>
   );
 }

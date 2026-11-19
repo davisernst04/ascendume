@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, varchar, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, varchar, boolean, index, integer, date, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Better Auth Users Table
@@ -39,6 +39,10 @@ export const account = pgTable("account", {
   accessToken: text("accessToken"),
   refreshToken: text("refreshToken"),
   idToken: text("idToken"),
+  accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
+  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+  scope: text("scope"),
+  // Pre-1.7 better-auth column, no longer written. Kept so older deploys keep working.
   expiresAt: timestamp("expiresAt"),
   password: text("password"),
   createdAt: timestamp("createdAt").notNull(),
@@ -120,15 +124,15 @@ export const education = pgTable("education", {
   resumeIdIdx: index("education_resume_id_idx").on(table.resumeId),
 }));
 
-// Skills Table
-export const skills = pgTable("skills", {
+// Skill Categories Table — one row per `Label: items` line in Jake's template
+export const skillCategories = pgTable("skill_categories", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  resumeId: text("resume_id").notNull().references(() => resumes.id, { onDelete: "cascade" }).unique(),
-  technical: text("technical"),
-  frameworks: text("frameworks"),
-  tools: text("tools"),
+  resumeId: text("resume_id").notNull().references(() => resumes.id, { onDelete: "cascade" }),
+  label: varchar("label", { length: 255 }).notNull().default(""),
+  items: text("items").notNull().default(""),
+  order: integer("order").notNull().default(0),
 }, (table) => ({
-  resumeIdIdx: index("skills_resume_id_idx").on(table.resumeId),
+  resumeIdIdx: index("skill_categories_resume_id_idx").on(table.resumeId),
 }));
 
 // Projects Table
@@ -157,6 +161,31 @@ export const certifications = pgTable("certifications", {
   resumeIdIdx: index("certifications_resume_id_idx").on(table.resumeId),
 }));
 
+// AI usage — one row per user, UTC day and kind; enforces the daily caps in lib/ai/usage.ts
+export const aiUsage = pgTable("ai_usage", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+  kind: varchar("kind", { length: 20 }).notNull(),
+  count: integer("count").notNull().default(0),
+}, (table) => ({
+  userDayKindIdx: uniqueIndex("ai_usage_user_day_kind_idx").on(table.userId, table.day, table.kind),
+}));
+
+// Analytics events — the six events in lib/analytics/events.ts. Never resume content.
+// anonymousId is a random id kept in the browser; userId is set when signed in.
+export const analyticsEvents = pgTable("analytics_events", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: varchar("name", { length: 40 }).notNull(),
+  props: jsonb("props").$type<Record<string, string>>().notNull().default({}),
+  anonymousId: varchar("anonymous_id", { length: 64 }).notNull(),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  nameCreatedIdx: index("analytics_events_name_created_idx").on(table.name, table.createdAt),
+  anonymousIdIdx: index("analytics_events_anonymous_id_idx").on(table.anonymousId),
+}));
+
 // Relations
 export const resumesRelations = relations(resumes, ({ one, many }) => ({
   personalInfo: one(personalInfo, {
@@ -165,10 +194,7 @@ export const resumesRelations = relations(resumes, ({ one, many }) => ({
   }),
   workExperience: many(workExperience),
   education: many(education),
-  skills: one(skills, {
-    fields: [resumes.id],
-    references: [skills.resumeId],
-  }),
+  skillCategories: many(skillCategories),
   projects: many(projects),
   certifications: many(certifications),
 }));
@@ -194,9 +220,9 @@ export const educationRelations = relations(education, ({ one }) => ({
   }),
 }));
 
-export const skillsRelations = relations(skills, ({ one }) => ({
+export const skillCategoriesRelations = relations(skillCategories, ({ one }) => ({
   resume: one(resumes, {
-    fields: [skills.resumeId],
+    fields: [skillCategories.resumeId],
     references: [resumes.id],
   }),
 }));

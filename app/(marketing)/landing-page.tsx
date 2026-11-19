@@ -1,452 +1,82 @@
-"use client";
-
-import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Check, Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { PDFResumePreview } from "@/components/pdf-preview";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useState } from "react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Wordmark } from "@/components/wordmark";
+import { HeroResume, SCORE_DONE_AT } from "@/components/landing/hero-resume";
+import { HeroHeadline, HEADLINE_DONE_AT } from "@/components/landing/hero-headline";
 
-const HeroButtons = ({ className }: { className?: string }) => (
-  <div className={className}>
-    <Link href="/auth/sign-in" className="w-full">
-      <Button
-        size="lg"
-        className="h-14 sm:h-16 px-8 sm:px-10 text-lg sm:text-xl font-black shadow-2xl shadow-primary/30 group rounded-xl w-full"
-      >
-        Start
-        <ArrowRight className="ml-2 w-5 h-5 sm:w-6 h-6 transition-transform group-hover:translate-x-1" />
-      </Button>
-    </Link>
-  </div>
-);
+// Upload → parse → builder → review. Guests are sent through sign-up first,
+// because parsing runs on the server.
+const REVIEW_HREF = "/review";
+// Guests can build without an account; the draft stays in their browser.
+const BUILD_HREF = "/new?guided=1";
 
-const Headline = ({ className }: { className?: string }) => (
-  <div className={className}>
-    <h1 className="text-7xl md:text-8xl lg:text-[140px] leading-[0.85] tracking-tighter">
-      Get hired yesterday.
-    </h1>
-  </div>
-);
+const shell = "mx-auto w-full max-w-[90rem] px-4 sm:px-8 lg:px-12";
+// The sheet is sized by the window height so the page never scrolls.
+const sheetWidth = "lg:w-[min(32rem,calc((100dvh-10rem)*0.773),38vw)]";
+const at = (s: number) => ({ "--at": `${s}s` }) as React.CSSProperties;
 
-const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
-    {children}
-  </p>
-);
-
-const features = [
-  {
-    num: "01",
-    title: "AI Bullet Enhancement",
-    description:
-      "Rewrites your bullet points to be stronger, more impactful, and ATS-optimized — so your experience speaks for itself.",
-  },
-  {
-    num: "02",
-    title: "Live LaTeX Preview",
-    description:
-      "See your resume render in real-time as you type. No refreshing, no guessing.",
-  },
-  {
-    num: "03",
-    title: "One-Click PDF Export",
-    description:
-      "Download a pixel-perfect PDF instantly, ready to send to any employer.",
-  },
-  {
-    num: "04",
-    title: "Smart Resume Parser",
-    description:
-      "Upload an existing resume and we'll import your content automatically.",
-  },
-];
-
-function FeatureCard({
-  num,
-  title,
-  description,
-  className,
-}: {
-  num: string;
-  title: string;
-  description: string;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-2xl bg-card ring-1 ring-border p-8 flex flex-col justify-end",
-        "bg-gradient-to-br from-primary/5 to-transparent",
-        className,
-      )}
-    >
-      <span className="absolute top-5 right-6 text-[96px] leading-none font-bold text-muted-foreground/20 select-none pointer-events-none">
-        {num}
-      </span>
-      <h3 className="text-2xl font-bold tracking-tight mb-2">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed text-sm">
-        {description}
-      </p>
-    </div>
-  );
-}
-
-const steps = [
-  {
-    num: "1",
-    title: "Upload or start fresh",
-    description: "Import your existing resume or begin from our template.",
-  },
-  {
-    num: "2",
-    title: "Edit and enhance",
-    description:
-      "Use AI to sharpen your bullets, fill in your experience, and fine-tune every detail.",
-  },
-  {
-    num: "3",
-    title: "Export and apply",
-    description: "Download a polished PDF and start sending applications.",
-  },
-];
-
-const freeFeatures = [
-  "1 resume",
-  "Limited AI enhancements per month",
-  "PDF export",
-  "Live LaTeX preview",
-];
-
-const proFeatures = [
-  "Unlimited resumes",
-  "Unlimited AI enhancements",
-  "PDF export",
-  "Live LaTeX preview",
-  "Priority support",
-];
-
+/**
+ * The whole landing page is one screen on a notebook-cover background. Phones
+ * stack headline, resume, then the buttons, the resume and button row spanning the
+ * navbar's width (the resume crops from the bottom on short screens); desktop gives the headline the wide
+ * left column and puts the resume, mid ATS scan, on the right. The buttons wipe
+ * in once the headline lands, and "Review my resume" pulses when the score hits 100.
+ */
 export default function LandingPage() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 transition-colors duration-300">
-      {/* Paper grain texture overlay */}
-      <div
-        className="pointer-events-none fixed inset-0 z-[999] opacity-[0.03]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-        }}
-      />
+    <div className="notebook-cover relative flex h-dvh flex-col overflow-hidden text-ink">
+      <header className="relative z-10 shrink-0 border-b border-rule-strong/40 bg-surface">
+        <div className={`${shell} flex h-16 items-center justify-between gap-4`}>
+          <Wordmark className="text-[1.5rem]" />
+          <nav aria-label="Account" className="flex items-center gap-1.5">
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/auth/sign-in">Sign in</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href={BUILD_HREF}>Start building</Link>
+            </Button>
+          </nav>
+        </div>
+      </header>
 
-      {/* Navigation */}
-      <nav className="sticky top-0 z-[1000] border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 group cursor-pointer shrink-0">
-            <span className="font-bold text-xl sm:text-2xl tracking-tighter">
-              ascendume
-            </span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/auth/sign-in">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="font-bold rounded-xl"
-              >
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/auth/sign-in">
-              <Button
-                size="sm"
-                className="font-bold shadow-lg shadow-primary/20 rounded-xl"
-              >
-                Get Started
-              </Button>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 md:hidden">
-            <button
-              className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors focus:outline-none"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
+      <main
+        className={`${shell} relative grid min-h-0 flex-1 items-center gap-y-5 py-5 [align-content:safe_center] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,max-content)_auto] lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_auto] lg:gap-x-[clamp(4rem,7vw,8rem)] lg:gap-y-[clamp(1.5rem,5vh,3.5rem)]`}
+      >
+        <div className="@container lg:self-end">
+          <HeroHeadline className="text-[min(16cqi,8.5vh)] leading-[0.92] tracking-[-0.025em] lg:text-[min(28.5cqi,26vh)]" />
         </div>
 
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-border bg-background px-4 py-6 flex flex-col gap-4 overflow-hidden shadow-2xl"
-            >
-              <div className="flex flex-col gap-3 px-4">
-                <Link href="/auth/sign-in">
-                  <Button
-                    variant="outline"
-                    className="w-full font-black h-12 rounded-xl border-2 dark:border-zinc-800"
-                  >
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/auth/sign-in">
-                  <Button className="w-full font-black h-12 rounded-xl">
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
+        <HeroResume
+          className={`w-full max-lg:min-h-0 max-lg:self-stretch lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mr-[4%] ${sheetWidth}`}
+        />
 
-      <div className="overflow-x-hidden">
-        {/* Hero Section */}
-        <section className="relative pt-8 pb-16 lg:pt-0 lg:pb-0 overflow-hidden min-h-[calc(100vh-80px)] flex items-center">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 pointer-events-none opacity-20 dark:opacity-10">
-            <div className="absolute top-20 left-1/4 w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] bg-primary/20 blur-[60px] sm:blur-[120px] rounded-full animate-pulse" />
-            <div className="absolute bottom-20 right-1/4 w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] bg-accent/20 blur-[60px] sm:blur-[120px] rounded-full animate-pulse delay-1000" />
-          </div>
+        <div className="flex gap-3 lg:gap-4 lg:self-start">
+          <Link
+            href={REVIEW_HREF}
+            className="cta cta-marker"
+            style={{ ...at(HEADLINE_DONE_AT - 0.1), "--ping": `${SCORE_DONE_AT}s` } as React.CSSProperties}
+          >
+            <span className="cta-label">
+              Review my resume
+              <ArrowRight className="cta-arrow" strokeWidth={2.5} />
+            </span>
+          </Link>
+          <Link href={BUILD_HREF} className="cta cta-outline" style={at(HEADLINE_DONE_AT + 0.08)}>
+            <span className="cta-label">
+              <Sparkles className="cta-sparkle" strokeWidth={2.25} />
+              Build one with AI
+            </span>
+          </Link>
+        </div>
+      </main>
 
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 grid lg:grid-cols-2 gap-6 lg:gap-20 items-center w-full">
-            {/* Mobile Headline - Shows at the top on mobile, hidden on desktop */}
-            <Headline className="lg:hidden text-center" />
-
-            {/* Text Content Block */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-center lg:text-left order-2 lg:order-1"
-            >
-              {/* Desktop Headline - Hidden on mobile */}
-              <Headline className="hidden lg:block" />
-
-              <div className="max-w-none mx-auto lg:mx-0">
-                <HeroButtons className="mt-2 lg:mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start w-full" />
-              </div>
-            </motion.div>
-
-            {/* PDF Preview Block */}
-            <div className="relative order-1 lg:order-2 w-full max-w-[500px] mx-auto overflow-hidden sm:overflow-visible flex lg:justify-end lg:max-w-none lg:mx-0">
-              <div className="w-full lg:max-w-[500px]">
-                <PDFResumePreview />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-24 lg:py-32 border-t border-border">
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-12"
-            >
-              <SectionLabel>Features</SectionLabel>
-              <h2 className="text-5xl lg:text-6xl font-bold tracking-tighter">
-                Everything you need
-                <br />
-                to land the job.
-              </h2>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4"
-            >
-              <FeatureCard {...features[0]} className="min-h-[320px]" />
-              <div className="grid grid-cols-1 gap-4">
-                {features.slice(1).map((f) => (
-                  <FeatureCard key={f.num} {...f} />
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section className="py-24 lg:py-32 border-t border-border">
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-16"
-            >
-              <SectionLabel>How It Works</SectionLabel>
-              <h2 className="text-5xl lg:text-6xl font-bold tracking-tighter">
-                Three steps to your
-                <br />
-                next job.
-              </h2>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-            >
-              <div className="relative grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
-                {/* Dashed connector — desktop only */}
-                <div className="hidden md:block absolute top-9 left-[20%] right-[20%] border-t border-dashed border-border" />
-
-                {steps.map((step) => (
-                  <div key={step.num} className="flex flex-col">
-                    <span className="text-8xl font-bold font-serif tracking-tighter leading-none mb-5 text-foreground">
-                      {step.num}
-                    </span>
-                    <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {step.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-16 flex justify-center">
-                <Link href="/auth/sign-in">
-                  <Button
-                    size="lg"
-                    className="h-14 px-10 text-lg font-black shadow-2xl shadow-primary/30 group rounded-xl"
-                  >
-                    Build my resume
-                    <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section className="py-24 lg:py-32 border-t border-border">
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-16 text-center"
-            >
-              <SectionLabel>Pricing</SectionLabel>
-              <h2 className="text-5xl lg:text-6xl font-bold tracking-tighter">
-                Simple, honest pricing.
-              </h2>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-                {/* Free card */}
-                <div className="rounded-2xl bg-card ring-1 ring-border p-8 flex flex-col">
-                  <SectionLabel>Free</SectionLabel>
-                  <div className="mb-6">
-                    <span className="text-5xl font-bold tracking-tighter">
-                      $0
-                    </span>
-                    <span className="text-muted-foreground ml-2 text-sm">
-                      / forever
-                    </span>
-                  </div>
-                  <ul className="space-y-3 mb-8 flex-1">
-                    {freeFeatures.map((f) => (
-                      <li key={f} className="flex items-center gap-3 text-sm">
-                        <Check className="w-4 h-4 text-primary shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/auth/sign-in">
-                    <Button
-                      variant="outline"
-                      className="w-full rounded-xl font-bold h-12"
-                    >
-                      Start for free
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-
-                {/* Pro card */}
-                <div className="relative rounded-2xl bg-gradient-to-b from-primary/5 to-transparent ring-2 ring-primary p-8 flex flex-col">
-                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                    Most Popular
-                  </div>
-                  <SectionLabel>Pro</SectionLabel>
-                  <div className="mb-6">
-                    <span className="text-5xl font-bold tracking-tighter">
-                      $X
-                    </span>
-                    <span className="text-muted-foreground ml-2 text-sm">
-                      / mo
-                    </span>
-                  </div>
-                  <ul className="space-y-3 mb-8 flex-1">
-                    {proFeatures.map((f) => (
-                      <li key={f} className="flex items-center gap-3 text-sm">
-                        <Check className="w-4 h-4 text-primary shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/auth/sign-in">
-                    <Button className="w-full rounded-xl font-bold h-12 shadow-lg shadow-primary/20">
-                      Get Pro
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <p className="text-center text-sm text-muted-foreground mt-6">
-                No credit card required. Upgrade anytime.
-              </p>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="py-12 sm:py-20 border-t border-border bg-background transition-colors duration-300">
-          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center">
-              <span className="font-bold text-xl tracking-tighter">
-                ascendume
-              </span>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-              <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest text-center md:text-right">
-                © 2026 Ascendume.
-              </p>
-              <div className="flex gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
-                <a href="#" className="hover:text-primary transition-colors">
-                  Privacy
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
-      </div>
+      <footer className={`${shell} relative flex h-10 shrink-0 items-center justify-center gap-6 text-sm text-ink-soft`}>
+        <Link href="/privacy" className="hover:text-ink hover:underline">
+          Privacy
+        </Link>
+        <span>© 2026 Ascendume</span>
+      </footer>
     </div>
   );
 }

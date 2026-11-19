@@ -4,112 +4,73 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Forest-green leather, parchment, and ochre accents. */
 :root {
-  --background: oklch(0.9195 0.0169 88.0030);
-  --foreground: oklch(0.2350 0 0);
-  --card: oklch(0.9530 0.0156 86.4257);
-  --card-foreground: oklch(0.2350 0 0);
-  --popover: oklch(0.9530 0.0156 86.4257);
-  --popover-foreground: oklch(0.2350 0 0);
-  --primary: oklch(0.3012 0 0);
-  --primary-foreground: oklch(0.9169 0.0175 99.6160);
-  --secondary: oklch(0.8647 0.0201 87.5232);
-  --secondary-foreground: oklch(0.3012 0 0);
-  --muted: oklch(0.8340 0.0232 87.1630);
-  --muted-foreground: oklch(0.4688 0.0136 84.5932);
-  --accent: oklch(0.9169 0.0175 99.6160);
-  --accent-foreground: oklch(0.3012 0 0);
-  --destructive: oklch(0.5771 0.2152 27.3250);
-  --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.8434 0.0231 87.1621);
-  --input: oklch(0.8434 0.0231 87.1621);
-  --ring: oklch(0.3012 0 0);
-  --chart-1: oklch(0.6863 0.1743 34.2614);
-  --chart-2: oklch(0.2350 0 0);
-  --chart-3: oklch(0.4688 0.0136 84.5932);
-  --chart-4: oklch(0.7057 0.0250 82.0932);
-  --chart-5: oklch(0.8340 0.0232 87.1630);
-  --sidebar: oklch(0.8985 0.0199 87.5195);
-  --sidebar-foreground: oklch(0.2350 0 0);
-  --sidebar-primary: oklch(0.3012 0 0);
-  --sidebar-primary-foreground: oklch(0.9169 0.0175 99.6160);
-  --sidebar-accent: oklch(0.9169 0.0175 99.6160);
-  --sidebar-accent-foreground: oklch(0.3012 0 0);
-  --sidebar-border: oklch(0.8434 0.0231 87.1621);
-  --sidebar-ring: oklch(0.3012 0 0);
-  --font-sans: "Times New Roman", Times, Georgia, serif;
-  --font-serif: "Times New Roman", Times, Georgia, serif;
-  --font-mono: "JetBrains Mono", monospace;
-  --radius: 0.5rem;
-  --shadow-x: 0px;
-  --shadow-y: 4px;
-  --shadow-blur: 10px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.1;
-  --shadow-color: #000000;
-  --shadow-2xs: 0px 4px 10px 0px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0px 4px 10px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0px 4px 10px 0px hsl(0 0% 0% / 0.10), 0px 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow: 0px 4px 10px 0px hsl(0 0% 0% / 0.10), 0px 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --shadow-md: 0px 4px 10px 0px hsl(0 0% 0% / 0.10), 0px 2px 4px -1px hsl(0 0% 0% / 0.10);
-  --shadow-lg: 0px 4px 10px 0px hsl(0 0% 0% / 0.10), 0px 4px 6px -1px hsl(0 0% 0% / 0.10);
-  --shadow-xl: 0px 4px 10px 0px hsl(0 0% 0% / 0.10), 0px 8px 10px -1px hsl(0 0% 0% / 0.10);
-  --shadow-2xl: 0px 4px 10px 0px hsl(0 0% 0% / 0.25);
-  --tracking-normal: 0.01em;
-  --spacing: 0.25rem;
+  --ink: #2b2620;
+  --ink-soft: #6b6257;
+  --mist: #e4e1d5;
+  --mist-deep: #d8d4c5;
+  --surface: #efeee6;
+  --raised: #f8f7f2;
+  --paper: #ffffff;
+  --rule: #d3cfc2;
+  --rule-strong: #b7b1a1;
+  --brand: #2f4f3e;
+  --brand-deep: #233b2e;
+  --brand-wash: #dfe6dc;
+  --marker: #e3c46e;
+  --marker-deep: #d2b05a;
+  --marker-soft: #f2e6bf;
+  --danger: #8e2f2a;
+  --danger-wash: #f3e1dc;
+  --ok: #3f6b45;
+  --ok-wash: #e1eadc;
+
+  /* shadcn token names, mapped onto the palette above */
+  --background: var(--surface);
+  --foreground: var(--ink);
+  --card: var(--raised);
+  --card-foreground: var(--ink);
+  --popover: var(--raised);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: #f8f7f2;
+  --secondary: var(--mist);
+  --secondary-foreground: var(--ink);
+  --muted: var(--mist);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--brand-wash);
+  --accent-foreground: var(--brand-deep);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--brand);
+
+  --radius: 0.375rem;
+  --sheet-shadow: 0 1px 2px rgb(43 38 32 / 0.08), 0 14px 34px -14px rgb(43 38 32 / 0.35);
 }
 
 .dark {
-  --background: oklch(0.1913 0 0);
-  --foreground: oklch(0.9173 0.0133 82.4015);
-  --card: oklch(0.2264 0 0);
-  --card-foreground: oklch(0.9173 0.0133 82.4015);
-  --popover: oklch(0.2264 0 0);
-  --popover-foreground: oklch(0.9173 0.0133 82.4015);
-  --primary: oklch(0.8520 0.0205 100.6306);
-  --primary-foreground: oklch(0.3329 0 0);
-  --secondary: oklch(0.2520 0 0);
-  --secondary-foreground: oklch(0.8520 0.0205 100.6306);
-  --muted: oklch(0.2850 0 0);
-  --muted-foreground: oklch(0.6348 0.0113 81.7875);
-  --accent: oklch(0.3329 0 0);
-  --accent-foreground: oklch(0.8520 0.0205 100.6306);
-  --destructive: oklch(0.6368 0.2078 25.3313);
-  --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.2931 0 0);
-  --input: oklch(0.2931 0 0);
-  --ring: oklch(0.8520 0.0205 100.6306);
-  --chart-1: oklch(0.6863 0.1743 34.2614);
-  --chart-2: oklch(0.8590 0.0209 74.6369);
-  --chart-3: oklch(0.6348 0.0113 81.7875);
-  --chart-4: oklch(0.4681 0.0069 84.5829);
-  --chart-5: oklch(0.3523 0 0);
-  --sidebar: oklch(0.1730 0 0);
-  --sidebar-foreground: oklch(0.9173 0.0133 82.4015);
-  --sidebar-primary: oklch(0.8520 0.0205 100.6306);
-  --sidebar-primary-foreground: oklch(0.3329 0 0);
-  --sidebar-accent: oklch(0.3329 0 0);
-  --sidebar-accent-foreground: oklch(0.8520 0.0205 100.6306);
-  --sidebar-border: oklch(0.2931 0 0);
-  --sidebar-ring: oklch(0.8520 0.0205 100.6306);
-  --font-sans: "Times New Roman", Times, Georgia, serif;
-  --font-serif: "Times New Roman", Times, Georgia, serif;
-  --font-mono: "JetBrains Mono", monospace;
-  --radius: 0.5rem;
-  --shadow-x: 0px;
-  --shadow-y: 6px;
-  --shadow-blur: 15px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.3;
-  --shadow-color: #000000;
-  --shadow-2xs: 0px 6px 15px 0px hsl(0 0% 0% / 0.15);
-  --shadow-xs: 0px 6px 15px 0px hsl(0 0% 0% / 0.15);
-  --shadow-sm: 0px 6px 15px 0px hsl(0 0% 0% / 0.30), 0px 1px 2px -1px hsl(0 0% 0% / 0.30);
-  --shadow: 0px 6px 15px 0px hsl(0 0% 0% / 0.30), 0px 1px 2px -1px hsl(0 0% 0% / 0.30);
-  --shadow-md: 0px 6px 15px 0px hsl(0 0% 0% / 0.30), 0px 2px 4px -1px hsl(0 0% 0% / 0.30);
-  --shadow-lg: 0px 6px 15px 0px hsl(0 0% 0% / 0.30), 0px 4px 6px -1px hsl(0 0% 0% / 0.30);
-  --shadow-xl: 0px 6px 15px 0px hsl(0 0% 0% / 0.30), 0px 8px 10px -1px hsl(0 0% 0% / 0.30);
-  --shadow-2xl: 0px 6px 15px 0px hsl(0 0% 0% / 0.75);
+  --ink: #ebe7dc;
+  --ink-soft: #a9a193;
+  --mist: #252b26;
+  --mist-deep: #2e352f;
+  --surface: #181c19;
+  --raised: #1f2420;
+  --paper: #ffffff;
+  --rule: #343b35;
+  --rule-strong: #4a524b;
+  --brand: #9cc2a6;
+  --brand-deep: #bcd8c3;
+  --brand-wash: #26382d;
+  --marker-soft: #4a4026;
+  --danger: #e4958c;
+  --danger-wash: #3d2422;
+  --ok: #9cc2a6;
+  --ok-wash: #22332a;
+  --primary-foreground: #181c19;
+  --sheet-shadow: 0 2px 4px rgb(0 0 0 / 0.4), 0 24px 60px -20px rgb(0 0 0 / 0.7);
 }
 
 @theme inline {
@@ -132,107 +93,481 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
-  --font-serif: var(--font-serif);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-mist: var(--mist);
+  --color-mist-deep: var(--mist-deep);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-paper: var(--paper);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-wash: var(--brand-wash);
+  --color-marker: var(--marker);
+  --color-marker-deep: var(--marker-deep);
+  --color-marker-soft: var(--marker-soft);
+  --color-danger: var(--danger);
+  --color-danger-wash: var(--danger-wash);
+  --color-ok: var(--ok);
+  --color-ok-wash: var(--ok-wash);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-alegreya-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-alegreya), Georgia, serif;
 
-  --shadow-2xs: var(--shadow-2xs);
-  --shadow-xs: var(--shadow-xs);
-  --shadow-sm: var(--shadow-sm);
-  --shadow: var(--shadow);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-2xl: var(--shadow-2xl);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
 
-  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
-  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
-  --tracking-normal: var(--tracking-normal);
-  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
-  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
-  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --shadow-sheet: var(--sheet-shadow);
+
+  /* Entrance motion is CSS so it plays from server HTML, before hydration. */
+  --animate-rise: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-land: land 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-swipe: swipe 0.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+}
+@keyframes land {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+}
+@keyframes swipe {
+  from {
+    transform: scaleX(0);
+  }
 }
 
 @layer base {
-  *, ::after, ::before, ::backdrop, ::file-selector-button {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
     border-color: var(--border, currentColor);
     outline-color: var(--ring, currentColor);
   }
-  body {
-    @apply bg-background text-foreground;
-    letter-spacing: var(--tracking-normal);
+  html {
+    -webkit-text-size-adjust: 100%;
   }
-  /* Forcefully remove ALL borders and shadows from PDF elements */
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-size: 1.0625rem;
+  }
+  /* Headings are set in the book serif. */
+  h1,
+  h2 {
+    font-family: var(--font-serif);
+    font-feature-settings: "onum", "kern";
+  }
+  ::selection {
+    background: var(--marker);
+    color: #2b2620;
+  }
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* react-pdf renders raw canvases; keep its wrappers from adding chrome. */
   .react-pdf__Document,
   .react-pdf__Page,
-  .react-pdf__Page__canvas,
-  .react-pdf__Page__textContent,
-  .react-pdf__Page__annotations,
-  .react-pdf__Page--no-border,
-  .pdf-page-wrapper,
-  .pdf-page-wrapper > div,
-  .pdf-page-wrapper canvas,
-  .react-pdf__Document > div,
-  .react-pdf__Page > div,
-  canvas {
+  .react-pdf__Page__canvas {
     border: none !important;
-    border-width: 0 !important;
     box-shadow: none !important;
-    outline: none !important;
     margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
   }
-  /* Target any nested divs that might have inherited borders */
-  [class*="react-pdf"] *,
-  .pdf-page-wrapper * {
-    border: none !important;
-    border-width: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
+}
+
+@layer components {
+  .notebook-cover {
+    --ink: #efeee6;
+    --ink-soft: #d4d8c9;
+    --brand: #9cc2a6;
+    --brand-deep: #bcd8c3;
+    --primary-foreground: #181c19;
+    --surface: #070f0a;
+    --mist: #385342;
+    --rule-strong: #769180;
+    background-color: #0a140e;
+    background-image: url("/leather-grain.webp"), linear-gradient(120deg, #112117, #0a140e 58%, #060e09);
+    background-size: 256px 256px, cover;
+    background-blend-mode: soft-light, normal;
+  }
+
+  /* Paper always stays light, even on the dark cover or in dark mode. */
+  .sheet,
+  .on-paper {
+    --ink: #2b2620;
+    --ink-soft: #6b6257;
+    --rule: #d3cfc2;
+    --raised: #f8f7f2;
+    --mist-deep: #d8d4c5;
+    --ok: #3f6b45;
+    --ok-wash: #e1eadc;
+  }
+
+  /* The resume page. */
+  .sheet {
+    background: var(--paper);
+    box-shadow: var(--sheet-shadow);
+    color: #2b2620;
+  }
+  /* A soft ochre highlighter stroke behind text. */
+  .highlight {
+    background-image: linear-gradient(var(--marker), var(--marker));
+    background-size: 100% 55%;
+    background-position: 0 85%;
+    background-repeat: no-repeat;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    color: #2b2620;
   }
 }
 
-@keyframes fadeSlideIn {
-  to {
+@utility font-display {
+  font-family: var(--font-serif);
+  font-feature-settings: "onum", "kern";
+}
+
+/* ---------- Landing hero ----------
+   Everything here plays once, from server HTML. Each element's start time
+   comes in as --at (or an inline animation-delay) from the components. */
+
+/* Each headline line is a clipped band its letters rise out of. */
+.hero-line {
+  display: block;
+  overflow: clip;
+  white-space: nowrap;
+  padding: 0.1em 0.14em 0.16em 0;
+  margin: -0.1em -0.14em -0.16em 0;
+}
+.hero-char {
+  display: inline-block;
+  transform-origin: 0 100%;
+  animation: hero-char 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+@keyframes hero-char {
+  from {
+    opacity: 0;
+    color: var(--marker);
+    transform: translateY(110%) rotate(10deg) skewX(-10deg);
+    filter: blur(12px);
+  }
+  55% {
     opacity: 1;
-    filter: blur(0px);
-    transform: translateY(0px);
+    filter: blur(0);
+  }
+  70% {
+    color: var(--marker);
   }
 }
-
-@keyframes slideRightIn {
+.hero-swoosh path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.75s cubic-bezier(0.65, 0, 0.35, 1) var(--at, 0s) forwards;
+}
+@keyframes draw {
   to {
-    opacity: 1;
-    filter: blur(0px);
-    transform: translateX(0px);
+    stroke-dashoffset: 0;
   }
 }
 
-@keyframes testimonialIn {
+/* Call-to-action buttons. The fill wipes in like a highlighter stroke, then the
+   label rises into it. */
+.cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  /* Below lg the two buttons split the resume's width in half. */
+  flex: 1 1 0;
+  min-width: 0;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  padding: 0 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.35s ease,
+    color 0.3s ease;
+}
+/* Narrow phones: the two labels only just fit side by side, so drop the icons. */
+@media (max-width: 29.99rem) {
+  .cta {
+    padding: 0 0.875rem;
+  }
+  .cta-label svg {
+    display: none;
+  }
+}
+@media (min-width: 64rem) {
+  .cta {
+    flex: none;
+    height: 3.375rem;
+    padding: 0 1.5rem;
+    font-size: 1.125rem;
+  }
+}
+@media (min-width: 80rem) {
+  .cta {
+    height: 3.75rem;
+    padding: 0 2.1rem;
+    font-size: 1.25rem;
+  }
+}
+.cta::before,
+.cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+}
+.cta::before {
+  animation: cta-wipe 0.6s cubic-bezier(0.65, 0, 0.35, 1) var(--at, 0s) both;
+}
+.cta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  animation: cta-label 0.55s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--at, 0s) + 0.28s) both;
+}
+.cta-label svg {
+  width: 1.1em;
+  height: 1.1em;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cta:hover {
+  transform: translateY(-3px);
+}
+.cta:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 0.1s;
+}
+.cta:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+/* Review: the ochre highlighter. A light sheen crosses it on hover. */
+.cta-marker {
+  color: #2b2620;
+  animation: cta-ping 1.3s ease-out var(--ping, 0s) 2;
+}
+.cta-marker::before {
+  background: var(--marker);
+}
+.cta-marker::after {
+  background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 0.55) 50%, transparent 70%);
+  transform: translateX(-110%);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cta-marker:hover {
+  box-shadow:
+    0 12px 28px -10px color-mix(in srgb, var(--marker) 80%, transparent),
+    0 0 0 1px var(--marker-deep);
+}
+.cta-marker:hover::after {
+  transform: translateX(110%);
+}
+.cta-marker:hover .cta-arrow {
+  transform: translateX(5px);
+}
+
+/* Build: an outline that fills with green from the left on hover. */
+.cta-outline {
+  color: var(--ink);
+}
+.cta-outline::before {
+  border: 1px solid var(--rule-strong);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.cta-outline::after {
+  background: var(--brand);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.cta-outline:hover {
+  color: var(--primary-foreground);
+  box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--brand) 70%, transparent);
+}
+.cta-outline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+.cta-outline:hover .cta-sparkle {
+  transform: rotate(-18deg) scale(1.2);
+}
+
+@keyframes cta-wipe {
+  from {
+    clip-path: inset(0 100% 0 0 round var(--radius));
+  }
   to {
-    opacity: 1;
-    filter: blur(0px);
-    transform: translateY(0px) scale(1);
+    clip-path: inset(0 0 0 0 round var(--radius));
+  }
+}
+@keyframes cta-label {
+  from {
+    opacity: 0;
+    transform: translateY(0.9em);
+  }
+}
+/* Once the resume scores 100, the review button rings twice: "yours next". */
+@keyframes cta-ping {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--marker) 70%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 16px color-mix(in srgb, var(--marker) 0%, transparent);
   }
 }
 
+/* The ATS scan over the hero resume. */
+.ats-beam {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--ok) 10%, transparent) 70%,
+    color-mix(in srgb, var(--ok) 26%, transparent)
+  );
+  border-bottom: 2px solid var(--ok);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ok) 60%, transparent);
+  animation-name: ats-beam;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+@keyframes ats-beam {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(var(--beam-end));
+  }
+}
+.ats-frame {
+  animation-name: ats-frame;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+.ats-frame span {
+  position: absolute;
+  width: 8%;
+  aspect-ratio: 1;
+  border-color: var(--marker);
+}
+@keyframes ats-frame {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  88% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+.ats-tick {
+  animation: ats-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes ats-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+.ats-stamp {
+  box-shadow: var(--sheet-shadow), 0 0 0 4px color-mix(in srgb, var(--marker) 85%, transparent);
+  animation: ats-stamp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes ats-stamp {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-30deg);
+  }
+}
+.ats-ring {
+  stroke-dasharray: 1;
+  animation: ats-ring 1.25s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+@keyframes ats-ring {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@property --score {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 100;
+}
+.ats-score::after {
+  counter-reset: score var(--score);
+  content: counter(score);
+  animation: ats-count 1.25s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  animation-delay: inherit;
+}
+@keyframes ats-count {
+  from {
+    --score: 0;
+  }
+  to {
+    --score: 100;
+  }
+}
+.ats-report {
+  animation: ats-report 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ats-report {
+  from {
+    opacity: 0;
+    transform: translate(-10%, 12px) rotate(-3deg);
+  }
+}
+.ats-report-row {
+  animation: ats-row 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ats-row {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}

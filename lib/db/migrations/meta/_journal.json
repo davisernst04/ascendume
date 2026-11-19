@@ -8,6 +8,41 @@
       "when": 1775158377571,
       "tag": "0000_productive_dazzler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795040456241,
+      "tag": "0001_skill_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795040582779,
+      "tag": "0002_drop_legacy_skills",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795042775645,
+      "tag": "0003_ai_usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795044723226,
+      "tag": "0004_analytics_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795048088593,
+      "tag": "0005_account_token_fields",
+      "breakpoints": true
     }
   ]
 }
