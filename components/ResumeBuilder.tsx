@@ -5,7 +5,7 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, us
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { AlertCircle, ArrowLeft, Check, ChevronDown, Download, Loader2, PenLine } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowLeft, ArrowUp, Check, ChevronDown, Download, Loader2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ import { GuidedStart } from "@/components/ai/guided-start";
 import { track } from "@/lib/analytics/track";
 import { SECTIONS, SectionEditor, type SectionType } from "@/components/builder/section-editors";
 import { HEADER_SLOT_ID } from "@/components/app-header";
+import { type BodySection, isBodySection, moveSection, placeAbove } from "@/lib/section-order";
 
 const LatexPdfPreview = dynamic(() => import("./latex-pdf-preview").then((m) => m.LatexPdfPreview), {
   ssr: false,
@@ -41,7 +42,7 @@ type View = "edit" | "page" | "review";
 type DeskTab = "page" | "review";
 
 function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
-  const { resumeData, updateTitle } = useResume();
+  const { resumeData, updateTitle, setSectionOrder } = useResume();
   const searchParams = useSearchParams();
 
   const tabParam = searchParams.get("tab");
@@ -135,6 +136,12 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const reviewBusy = review.status === "running" || review.status === "waiting-for-preview";
   const findingCount = review.result?.findingCount ?? 0;
   const section = SECTIONS.find((s) => s.type === active) ?? SECTIONS[0];
+  // The section list follows the page: Contact, then the body sections in this resume's order.
+  const orderedSections = [SECTIONS[0], ...resumeData.sectionOrder.map((t) => SECTIONS.find((s) => s.type === t)!)];
+  const reorderFromReview = useCallback(
+    (moved: BodySection, above: BodySection) => setSectionOrder(placeAbove(resumeData.sectionOrder, moved, above)),
+    [resumeData.sectionOrder, setSectionOrder]
+  );
 
   // The desk measures itself so the whole page fits in it without scrolling.
   // Room is kept for the pager and the page-count warning only when the resume runs past one page.
@@ -238,7 +245,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
         {/* Section list (wide screens) */}
         <nav aria-label="Resume sections" className="hidden w-48 shrink-0 overflow-y-auto border-r border-rule py-5 pl-4 pr-3 xl:block">
           <ul className="flex flex-col gap-0.5">
-            {SECTIONS.map((s) => (
+            {orderedSections.map((s) => (
               <li key={s.type}>
                 <button
                   type="button"
@@ -262,7 +269,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
           {/* Section tabs (narrower screens) */}
           <div className="sticky top-0 z-10 overflow-x-auto border-b border-rule bg-surface/95 backdrop-blur xl:hidden">
             <div className="flex w-max gap-1 px-4 py-1.5 sm:px-6" role="tablist" aria-label="Resume sections">
-              {SECTIONS.map((s) => (
+              {orderedSections.map((s) => (
                 <button
                   key={s.type}
                   type="button"
@@ -283,7 +290,17 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
 
           <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-5 sm:px-6">
             <header>
-              <h1 className="text-[1.625rem] font-bold leading-tight text-ink">{section.title}</h1>
+              <div className="flex items-center justify-between gap-3">
+                <h1 className="text-[1.625rem] font-bold leading-tight text-ink">{section.title}</h1>
+                {isBodySection(section.type) && (
+                  <SectionMover
+                    section={section.type}
+                    title={section.title}
+                    order={resumeData.sectionOrder}
+                    onMove={(step) => setSectionOrder(moveSection(resumeData.sectionOrder, section.type as BodySection, step))}
+                  />
+                )}
+              </div>
               <p className="max-w-prose text-[0.9375rem] text-ink-soft">{section.hint}</p>
             </header>
             {showGuidedStart && (
@@ -342,6 +359,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
                     signedIn={signedIn}
                     onRun={review.request}
                     onGoTo={goToSection}
+                    onReorder={reorderFromReview}
                   />
                 </div>
               </div>
@@ -371,6 +389,48 @@ function CountBadge({ n, muted }: { n: number; muted: boolean }) {
     >
       {n}
     </span>
+  );
+}
+
+/** Moves the open section up or down the page, e.g. Projects above Experience. */
+function SectionMover({
+  section,
+  title,
+  order,
+  onMove,
+}: {
+  section: BodySection;
+  title: string;
+  order: BodySection[];
+  onMove: (step: -1 | 1) => void;
+}) {
+  const index = order.indexOf(section);
+  return (
+    <div className="flex shrink-0 items-center gap-1 text-xs text-ink-soft">
+      <span aria-live="polite">
+        Section {index + 1} of {order.length}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        onClick={() => onMove(-1)}
+        disabled={index === 0}
+        aria-label={`Move ${title} up the page`}
+        title="Move up the page"
+      >
+        <ArrowUp aria-hidden />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        onClick={() => onMove(1)}
+        disabled={index === order.length - 1}
+        aria-label={`Move ${title} down the page`}
+        title="Move down the page"
+      >
+        <ArrowDown aria-hidden />
+      </Button>
+    </div>
   );
 }
 

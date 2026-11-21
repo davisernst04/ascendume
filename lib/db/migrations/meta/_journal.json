@@ -43,6 +43,13 @@
       "when": 1795048088593,
       "tag": "0005_account_token_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795292731181,
+      "tag": "0006_section_order",
+      "breakpoints": true
     }
   ]
 }

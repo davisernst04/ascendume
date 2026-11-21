@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { resumes, personalInfo, workExperience, education, skillCategories, projects, certifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Experience, Education, Project, Certification, SkillCategory } from "@/lib/resume-context";
+import { normalizeSectionOrder } from "@/lib/section-order";
 
 // GET /api/resumes - Get all resumes for the current user
 export async function GET(request: NextRequest) {
@@ -46,12 +47,13 @@ export async function POST(request: NextRequest) {
     const db = getDb();
 
     const body = await request.json();
-    const { title, personalInfoData, workExperienceData, educationData, skillsData, projectsData, certificationsData } = body;
+    const { title, personalInfoData, workExperienceData, educationData, skillsData, projectsData, certificationsData, sectionOrderData } = body;
 
     // Create resume
     const [resume] = await db.insert(resumes).values({
       userId: session.user.id,
       title: title || "My Resume",
+      sectionOrder: normalizeSectionOrder(sectionOrderData),
     }).returning();
 
     // Create personal info

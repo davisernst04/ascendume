@@ -153,7 +153,9 @@ Tokens live in `app/globals.css`: an academic, earth-toned palette. Parchment su
 
 The landing page is a single screen (hero only, sized to the window height, nothing to scroll to); keep it that way. Its background is a forest-green leather cover (`.notebook-cover` in `globals.css` layers a seamless grain tile over the forest-green ground), and the resume sits straight. Its motion (letter-by-letter headline, buttons wiping in, a one-time "ATS scan" of the resume ending on a score of 100) is CSS keyframes in `globals.css` with start times passed from the components as `--at` or inline delays, so it plays once from server HTML before hydration. The highlight and section-tick positions in `components/landing/hero-resume.tsx` are percentages of `public/resume-preview.png`: re-measure them if that image changes.
 
-The builder splits into `components/ResumeBuilder.tsx` (toolbar, section nav, the desk with page/review), `components/builder/section-editors.tsx` (one editor per section, plus the `SECTIONS` list in page order) and `components/builder/fields.tsx` (labelled fields, entry blocks, remove-with-confirm).
+The builder splits into `components/ResumeBuilder.tsx` (toolbar, section nav, the desk with page/review), `components/builder/section-editors.tsx` (one editor per section, plus the `SECTIONS` list in default order) and `components/builder/fields.tsx` (labelled fields, entry blocks, remove-with-confirm).
+
+Each resume stores the order of its body sections (`resumes.section_order`, `lib/section-order.ts`); Contact always stays first. The section nav, the LaTeX and the review all follow it. Always pass stored or submitted orders through `normalizeSectionOrder`.
 
 ### Key Conventions
 

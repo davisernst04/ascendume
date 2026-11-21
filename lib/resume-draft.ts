@@ -3,6 +3,7 @@
 // (private windows, cleared site data), so every access is guarded.
 import type { ResumeData } from "@/lib/resume-context";
 import { normalizeSkillCategories } from "@/lib/skill-categories";
+import { normalizeSectionOrder } from "@/lib/section-order";
 
 const STORAGE_KEY = "ascendume_resume_draft";
 
@@ -12,7 +13,12 @@ export function readDraft(): ResumeData | null {
     if (!saved) return null;
     const parsed = JSON.parse(saved);
     // A draft is never tied to a saved resume, so drop any stale id.
-    return { ...parsed, id: undefined, skills: normalizeSkillCategories(parsed.skills) };
+    return {
+      ...parsed,
+      id: undefined,
+      skills: normalizeSkillCategories(parsed.skills),
+      sectionOrder: normalizeSectionOrder(parsed.sectionOrder),
+    };
   } catch {
     return null;
   }

@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { resumes, personalInfo, workExperience, education, skillCategories, projects, certifications } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { Experience, Education, Project, Certification, SkillCategory } from "@/lib/resume-context";
+import { normalizeSectionOrder } from "@/lib/section-order";
 import { deleteUploadedFiles } from "@/lib/blob-files";
 
 // GET /api/resumes/[id] - Get a specific resume
@@ -69,12 +70,13 @@ export async function PUT(
       return NextResponse.json({ error: "Resume not found" }, { status: 404 });
     }
 
-    const { title, personalInfoData, workExperienceData, educationData, skillsData, projectsData, certificationsData } = body;
+    const { title, personalInfoData, workExperienceData, educationData, skillsData, projectsData, certificationsData, sectionOrderData } = body;
 
     // Update resume title and timestamp
     await db.update(resumes)
       .set({ 
         title: title || existing.title,
+        ...(sectionOrderData !== undefined ? { sectionOrder: normalizeSectionOrder(sectionOrderData) } : {}),
         updatedAt: new Date(),
       })
       .where(eq(resumes.id, id));

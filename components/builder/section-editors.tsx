@@ -9,6 +9,7 @@ import { AddButton, EntryBlock, FieldRow, TextAreaField, TextField, useOpenEntry
 
 export type SectionType = "personal" | "experience" | "education" | "skills" | "projects" | "certifications";
 
+/** Every section in the default page order. Each resume can reorder the body sections (lib/section-order.ts). */
 export const SECTIONS: { type: SectionType; title: string; hint: string }[] = [
   { type: "personal", title: "Contact", hint: "The lines at the top of the page. Use an email you check." },
   { type: "education", title: "Education", hint: "Your school, degree and graduation date. Add a GPA only if it helps." },

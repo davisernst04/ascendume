@@ -5,6 +5,7 @@ import { dateFormat, runDeterministicChecks } from "@/lib/review/deterministic";
 import { scoreReview } from "@/lib/review/findings";
 import { verbTense } from "@/lib/review/verbs";
 import type { CriterionId } from "@/lib/review/rubric";
+import { DEFAULT_SECTION_ORDER } from "@/lib/section-order";
 
 function resume(overrides: Partial<ResumeData> = {}): ResumeData {
   return {
@@ -24,6 +25,7 @@ function resume(overrides: Partial<ResumeData> = {}): ResumeData {
     skills: [],
     projects: [],
     certifications: [],
+    sectionOrder: [...DEFAULT_SECTION_ORDER],
     ...overrides,
   };
 }
@@ -197,4 +199,42 @@ test("a nearly empty resume gets findings and no overall score", () => {
   assert.ok(found.includes("completeness.substance"));
   const { overall } = scoreReview({ findings: r.findings, checked: r.checked, bulletCount: r.bullets.length, entryCount: r.entryCount });
   assert.equal(overall, null);
+});
+
+// ---- Section order -----------------------------------------------------------
+
+function project(id: string, bullets: string[]) {
+  return { id, name: id, url: "", technologies: "", description: bullets.map((b) => `• ${b}`).join("\n") };
+}
+
+function orderFinding(data: ResumeData) {
+  return runDeterministicChecks({ data, pageCount: 1 }).findings.find((f) => f.criterionId === "relevance.section-order");
+}
+
+const PROJECTS_FIRST = ["projects", "education", "experience", "skills", "certifications"] as const;
+
+test("one thin job and stronger projects: suggests moving Projects above Experience", () => {
+  const f = orderFinding(resume({ experience: [job([GOOD])], projects: [project("p1", [GOOD, GOOD]), project("p2", [GOOD])] }));
+  assert.deepEqual(f?.reorder, { section: "projects", above: "experience" });
+  assert.match(f!.detail, /3 bullets and your experience has 1/);
+});
+
+test("projects already first, or experience stronger, or several jobs: no projects-first note", () => {
+  const strongProjects = [project("p1", [GOOD, GOOD, GOOD])];
+  assert.equal(orderFinding(resume({ experience: [job([GOOD])], projects: strongProjects, sectionOrder: [...PROJECTS_FIRST] })), undefined);
+  assert.equal(orderFinding(resume({ experience: [job([GOOD, GOOD])], projects: [project("p1", [GOOD])] })), undefined);
+  const twoJobs = [job([GOOD]), job([GOOD], { id: "j2" })];
+  assert.equal(orderFinding(resume({ experience: twoJobs, projects: strongProjects })), undefined);
+});
+
+test("projects first but experience stronger: suggests moving Experience back up", () => {
+  const f = orderFinding(
+    resume({ experience: [job([GOOD, GOOD, GOOD])], projects: [project("p1", [GOOD])], sectionOrder: [...PROJECTS_FIRST] })
+  );
+  assert.deepEqual(f?.reorder, { section: "experience", above: "projects" });
+});
+
+test("no note when one of the two sections is empty", () => {
+  assert.equal(orderFinding(resume({ projects: [project("p1", [GOOD, GOOD])] })), undefined);
+  assert.equal(orderFinding(resume({ experience: [job([GOOD])], sectionOrder: [...PROJECTS_FIRST] })), undefined);
 });

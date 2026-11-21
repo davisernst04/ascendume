@@ -8,6 +8,7 @@ import { generateText, Output } from "ai";
 import { parseModel } from "@/lib/ai/models";
 import { LIMIT_MESSAGES, refundAiUse, takeAiUse } from "@/lib/ai/usage";
 import { z } from "zod";
+import { BODY_SECTIONS, normalizeSectionOrder } from "@/lib/section-order";
 import { getDb } from "@/lib/db";
 import { 
   resumes, 
@@ -66,6 +67,9 @@ const resumeSchema = z.object({
     date: z.string(),
     credentialUrl: z.string(),
   })),
+  sectionOrder: z
+    .array(z.enum(BODY_SECTIONS))
+    .describe("The resume's sections in the order they appear on the page. Leave out sections it doesn't have."),
 });
 
 const PARSE_RULES = `Rules:
@@ -190,6 +194,7 @@ export async function POST(req: NextRequest) {
     const [newResume] = await db.insert(resumes).values({
       userId: session.user.id,
       title: `${object.personalInfo.fullName || "My"} Resume`,
+      sectionOrder: normalizeSectionOrder(object.sectionOrder),
       ...(blobUrl ? { originalFileUrl: blobUrl } : {}),
     }).returning({ id: resumes.id });
 

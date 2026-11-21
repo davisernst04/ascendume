@@ -175,6 +175,14 @@ export const CRITERIA = [
     reason: "A link that isn't a web address (like a handle or a phrase) can't be clicked in the PDF.",
   },
   {
+    id: "relevance.section-order",
+    category: "relevance",
+    kind: "deterministic",
+    scope: "resume",
+    check: "The stronger of Experience and Projects comes first",
+    reason: "Recruiters skim from the top. With little work history, lead with Projects; once your experience shows more, put Experience first.",
+  },
+  {
     id: "relevance.supports",
     category: "relevance",
     kind: "llm",

@@ -6,6 +6,7 @@ import { type Finding, MIN_BULLETS_FOR_SCORE as MIN_BULLETS } from "@/lib/review
 import type { CriterionId } from "@/lib/review/rubric";
 import { firstWord, verbTense } from "@/lib/review/verbs";
 import { sanitizeUrl } from "@/lib/resume-latex";
+import { normalizeSectionOrder } from "@/lib/section-order";
 
 export interface DeterministicInput {
   data: ResumeData;
@@ -47,6 +48,10 @@ const MIN_BULLET_CHARS = 25;
 const UNRENDERABLE_CHAR = /[^\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\n\r\t]/u;
 
 // A link is fine if the PDF can make it clickable (see sanitizeUrl).
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
 
 function quote(s: string, max = 40): string {
   return s.length > max ? `"${s.slice(0, max - 1)}…"` : `"${s}"`;
@@ -150,8 +155,8 @@ export function runDeterministicChecks({ data, pageCount }: DeterministicInput):
     "ats.links",
   ]);
   const bullets = extractBullets(data);
-  const add = (criterionId: CriterionId, target: Finding["target"], detail: string) =>
-    findings.push({ criterionId, target, detail });
+  const add = (criterionId: CriterionId, target: Finding["target"], detail: string, extra?: Pick<Finding, "reorder">) =>
+    findings.push({ criterionId, target, detail, ...extra });
 
   // Bullet-level checks
   for (const b of bullets) {
@@ -271,6 +276,27 @@ export function runDeterministicChecks({ data, pageCount }: DeterministicInput):
     const v = f.value.trim();
     if (v && !sanitizeUrl(v)) {
       add("ats.links", { kind: "field", section: f.section, label: f.label }, `${quote(v)} isn't a web address, so it won't be a working link.`);
+    }
+  }
+
+  // Section order: lead with whichever of Experience and Projects says more.
+  // Only checked (and scored) when both sections are on the page.
+  if (data.experience.length > 0 && data.projects.length > 0) {
+    checked.add("relevance.section-order");
+    const order = normalizeSectionOrder(data.sectionOrder);
+    const projectsFirst = order.indexOf("projects") < order.indexOf("experience");
+    const jobBullets = bullets.filter((b) => b.section === "experience").length;
+    const projectBullets = bullets.length - jobBullets;
+    const counts = `Your projects have ${plural(projectBullets, "bullet")} and your experience has ${jobBullets}.`;
+    // Projects first only with little work history (one role at most), so a long career isn't pushed down.
+    if (!projectsFirst && data.experience.length <= 1 && projectBullets > jobBullets) {
+      add("relevance.section-order", { kind: "resume" }, `${counts} Move Projects above Experience.`, {
+        reorder: { section: "projects", above: "experience" },
+      });
+    } else if (projectsFirst && jobBullets > projectBullets) {
+      add("relevance.section-order", { kind: "resume" }, `${counts} Move Experience back above Projects.`, {
+        reorder: { section: "experience", above: "projects" },
+      });
     }
   }
 

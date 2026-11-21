@@ -6,6 +6,7 @@ import { reviewModel } from "@/lib/ai/models";
 import { LIMIT_MESSAGES, refundAiUse, takeAiUse } from "@/lib/ai/usage";
 import type { ResumeData } from "@/lib/resume-context";
 import { extractBullets } from "@/lib/review/bullets";
+import { DEFAULT_SECTION_ORDER } from "@/lib/section-order";
 import { buildReviewPrompt, llmReviewSchema, validateLlmFindings } from "@/lib/review/llm";
 
 export const maxDuration = 60;
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     skills: parsed.data.skills.map((s, i) => ({ id: String(i), ...s })),
     education: [],
     certifications: [],
+    sectionOrder: [...DEFAULT_SECTION_ORDER],
   } satisfies ResumeData;
 
   const bullets = extractBullets(data);
