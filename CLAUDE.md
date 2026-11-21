@@ -137,7 +137,7 @@ The rubric is data in `lib/review/rubric.ts` (id, category, kind, scope, reason)
 
 - The AI never invents a claim, number or metric. `lib/ai/rewrite.ts` checks every output with `inventedNumbers` (`lib/ai/fabrication.ts`), retries once, then refuses. Keep that check on any new generation path.
 - Every AI route requires a session and takes a daily use from `lib/ai/usage.ts` (`ai_usage` table, per user and UTC day): 3 reviews, 30 rewrites, 5 imports. Uses are refunded when the AI call fails.
-- Models: `reviewModel` (stronger, scoring), `rewriteModel` and `parseModel` (mini) in `lib/ai/models.ts`.
+- Models: `reviewModel` (stronger, scoring), `rewriteModel` and `parseModel` (`gpt-6-luna`, cheapest) in `lib/ai/models.ts`.
 
 ### Privacy, deletion, analytics
 
