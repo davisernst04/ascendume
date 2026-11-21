@@ -6,6 +6,8 @@
 
 /* Forest-green leather, parchment, and ochre accents. */
 :root {
+  /* Width of the builder's section list; the app header aligns its divider to it. */
+  --builder-rail: 14rem;
   --ink: #2b2620;
   --ink-soft: #6b6257;
   --mist: #e4e1d5;

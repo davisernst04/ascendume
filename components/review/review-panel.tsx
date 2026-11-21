@@ -187,7 +187,7 @@ function Note({
   const where = t.kind === "bullet" ? bullet?.entryLabel : t.kind === "entry" || t.kind === "field" ? t.label : null;
 
   return (
-    <article className="rounded-md border-l-4 border-marker bg-raised py-3 pl-4 pr-3 shadow-[0_0_0_1px_var(--rule)]">
+    <article className="rounded-md border-l-4 border-marker bg-raised py-3 pl-4 pr-3 wrap-anywhere shadow-[0_0_0_1px_var(--rule)]">
       <p className="font-semibold text-ink">{finding.detail}</p>
       {bullet && (
         <blockquote className="mt-2 rounded-sm bg-paper px-3 py-2 font-serif text-[0.9375rem] leading-snug text-[#2b2620] shadow-[0_0_0_1px_var(--rule)]">
