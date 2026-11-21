@@ -243,7 +243,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
 
       <div className="flex min-h-0 flex-1">
         {/* Section list (wide screens) */}
-        <nav aria-label="Resume sections" className="hidden w-48 shrink-0 overflow-y-auto border-r border-rule py-5 pl-4 pr-3 xl:block">
+        <nav aria-label="Resume sections" className="hidden w-(--builder-rail) shrink-0 overflow-y-auto border-r border-rule py-5 pl-4 pr-3 xl:block">
           <ul className="flex flex-col gap-0.5">
             {orderedSections.map((s) => (
               <li key={s.type}>
@@ -344,7 +344,7 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
               />
             </div>
             {deskTab === "review" && (
-              <div className="absolute inset-0 overflow-y-auto">
+              <div className="absolute inset-0 overflow-x-hidden overflow-y-auto">
                 <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
                   {/* Phones switch views with the tabs above; wide screens get a way back here. */}
                   <Button variant="ghost" size="sm" onClick={() => showDesk("page")} className="-ml-3 mb-3 hidden lg:inline-flex">

@@ -15,14 +15,17 @@ interface AppHeaderProps {
 export function AppHeader({ user }: AppHeaderProps) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-rule bg-surface px-4 sm:px-6">
-      <Wordmark />
-      {user && (
-        <nav aria-label="Main" className="hidden items-center text-[0.9375rem] font-medium sm:flex">
-          <Link href="/" className="rounded-md px-2.5 py-1.5 text-ink-soft hover:bg-mist/70 hover:text-ink">
-            Resumes
-          </Link>
-        </nav>
-      )}
+      {/* On xl the slot's divider lines up with the builder's section list (--builder-rail wide): px-6 + this + gap-4. */}
+      <div className="flex shrink-0 items-center gap-2 xl:w-[calc(var(--builder-rail)-2.5rem)]">
+        <Wordmark />
+        {user && (
+          <nav aria-label="Main" className="hidden items-center text-[0.9375rem] font-medium sm:flex">
+            <Link href="/" className="rounded-md px-2.5 py-1.5 text-ink-soft hover:bg-mist/70 hover:text-ink">
+              Resumes
+            </Link>
+          </nav>
+        )}
+      </div>
       <div id={HEADER_SLOT_ID} className="hidden min-w-0 flex-1 items-center gap-3 border-l border-rule pl-4 md:[&:not(:empty)]:flex" />
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
         {user ? (

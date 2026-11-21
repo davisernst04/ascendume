@@ -47,10 +47,10 @@ Optional — each OAuth provider appears on the sign-in page only when both of i
 - Always use plain `.string()`, `.boolean()`, `.array(...)` etc. with no defaults in schemas passed to `Output.object`
 - `generateObject` is deprecated in AI SDK 7 — use `generateText({ output: Output.object({ schema }) })` and read `result.output`
 
-### PDF Parsing (`pdf2json` v4)
-- Constructor: `new PDFParser(null, true)` — second arg enables raw text mode
-- API: `parseBuffer(buffer)`, `getRawTextContent()`, events `pdfParser_dataReady` / `pdfParser_dataError`
-- These APIs are confirmed working in v4.0.2
+### PDF Parsing (`pdfjs-dist`, `lib/pdf-text.ts`)
+- Uses the `legacy` build on the server, with the worker imported statically and run on the main thread (`globalThis.pdfjsWorker`)
+- Keep `pdfjs-dist` on the same version `react-pdf` depends on, so only one copy is installed
+- Don't go back to `pdf2json`: it drops the positioning gaps LaTeX PDFs use instead of space glyphs, so words run together
 
 ### AI SDK Versions
 - `ai` v7 + `@ai-sdk/openai` v4 are in use (Node 22+ required)

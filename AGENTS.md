@@ -5,7 +5,7 @@
 - **UI:** React 19, Tailwind CSS v4, Radix UI, Shadcn UI, `motion` (Framer Motion)
 - **Database:** Drizzle ORM, Neon Serverless Postgres (`@neondatabase/serverless`)
 - **Authentication:** `better-auth`
-- **AI & PDF:** Vercel AI SDK v7 (`generateText` + `Output.object`), `react-pdf` (preview rendering), `pdf2json` (upload parsing), SwiftLaTeX WASM (PDF compilation)
+- **AI & PDF:** Vercel AI SDK v7 (`generateText` + `Output.object`), `react-pdf` (preview rendering), `pdfjs-dist` (upload parsing), SwiftLaTeX WASM (PDF compilation)
 
 ## Execution Commands
 - **Type Checking (Run after refactors):** `npx tsc --noEmit`

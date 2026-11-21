@@ -5,6 +5,7 @@ import { resumes } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { PdfDrop } from "@/components/pdf-drop";
 import { ResumeRowDelete } from "@/components/resume-row-delete";
+import { PenLine } from "lucide-react";
 
 const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
@@ -57,13 +58,44 @@ export default async function DashboardPage({ userId }: { userId: string }) {
     </section>
   );
 
+  // First visit: the two ways in as two big cards, each saying what happens after you pick it.
   if (!hasResumes) {
     return (
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col justify-center px-4 py-8 sm:px-6">
-        <h1 className="text-[2.5rem] font-bold leading-tight text-ink">Start your first resume</h1>
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          {startReview}
-          {startNew}
+      <div className="mx-auto flex h-full w-full max-w-6xl flex-col justify-center-safe px-4 py-8 sm:px-6 lg:py-12">
+        <h1 className="text-[2.5rem] font-bold leading-tight text-ink lg:text-[3rem]">Start your first resume</h1>
+        <div className="mt-6 grid gap-6 md:grid-cols-2 lg:mt-8">
+          <StartCard
+            id="first-review"
+            title="Review a resume you have"
+            next={[
+              "We read your PDF into the builder, with each section filled in.",
+              "A review runs and leaves notes on the lines to fix.",
+              "Fix a note, run the review again, and download the new PDF.",
+            ]}
+          >
+            <PdfDrop size="large" />
+          </StartCard>
+          <StartCard
+            id="first-new"
+            title="Write a new one"
+            next={[
+              "Answer plain questions about a job or project.",
+              "Get bullets drafted from what you said. No numbers are made up.",
+              "Edit anything, then download a typeset PDF.",
+            ]}
+          >
+            <div className="flex min-h-56 flex-col items-center justify-center gap-4 rounded-lg border-2 border-rule bg-mist/40 px-6 py-10 text-center">
+              <PenLine className="size-6 text-ink-soft" aria-hidden />
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button asChild size="lg">
+                  <Link href="/new?guided=1">Answer questions</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/new">Start blank</Link>
+                </Button>
+              </div>
+            </div>
+          </StartCard>
         </div>
       </div>
     );
@@ -105,6 +137,31 @@ export default async function DashboardPage({ userId }: { userId: string }) {
         {startReview}
       </div>
     </div>
+  );
+}
+
+/** One way to start: a title, the action, and what happens after it. */
+function StartCard({ id, title, next, children }: { id: string; title: string; next: string[]; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-5 rounded-xl border border-rule bg-raised p-5 lg:p-8">
+      <h2 id={id} className="text-2xl font-bold text-ink">
+        {title}
+      </h2>
+      {children}
+      <div className="mt-auto border-t border-rule pt-5">
+        <p className="mb-3 text-xs font-bold tracking-[0.08em] text-ink-soft uppercase">What happens next</p>
+        <ol className="flex flex-col gap-2.5">
+          {next.map((step, i) => (
+            <li key={step} className="flex gap-3 text-[0.9375rem] text-ink-soft">
+              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-mist text-xs font-bold text-ink tabular-nums">
+                {i + 1}
+              </span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
   );
 }
 

@@ -1,11 +1,16 @@
 // Turns a PDF into plain text in reading order for the resume parser.
 //
-// pdf2json's raw-text mode emits text in content-stream order, which for many
-// generators (LibreOffice, Word) is bottom-to-top or interleaves wrapped lines,
-// so the AI parser attached phrases to the wrong bullets. Here the positioned
-// text runs are laid out again: split into columns if the page has a sidebar,
-// grouped into lines by y, and ordered left to right.
-import PDFParser from "pdf2json";
+// Content-stream order is bottom-to-top or interleaved for many generators
+// (LibreOffice, Word), so the positioned text runs from pdf.js are laid out
+// again: split into columns if the page has a sidebar, grouped into lines by
+// y, and ordered left to right. pdf.js turns positioning gaps into spaces,
+// which LaTeX PDFs need: they draw no space glyphs between words.
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import * as pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs";
+
+// Run pdf.js on the main thread. A static import keeps the worker in the
+// server bundle; pdf.js otherwise loads it by a path the bundler can't see.
+(globalThis as { pdfjsWorker?: unknown }).pdfjsWorker = pdfWorker;
 
 export interface TextRun {
   x: number;
@@ -85,8 +90,8 @@ function linesOf(runs: TextRun[]): string[] {
  * The x position where a second column starts, or null for a single-column
  * page. A column start is a left edge in the middle of the page where several
  * runs begin, that text from the left side (almost) never runs across, and
- * with a fair share of the text on each side. Widths from pdf2json are
- * estimates, so a run may overhang the edge slightly.
+ * with a fair share of the text on each side. A run may overhang the edge
+ * slightly.
  */
 export function findGutter(runs: TextRun[], pageWidth: number): number | null {
   if (runs.length < 10) return null;
@@ -126,50 +131,36 @@ export function layoutPage(runs: TextRun[], pageWidth: number): string {
   return `${linesOf(left).join("\n")}\n\n${linesOf(right).join("\n")}`;
 }
 
-interface Pdf2JsonText {
-  x: number;
-  y: number;
-  w?: number;
-  R: { T: string }[];
-}
-
 // Word and many templates draw bullets with Symbol/Wingdings glyphs in the
 // Unicode private-use area. Built from char codes to keep the source ASCII.
 const PRIVATE_USE = new RegExp(`[${String.fromCharCode(0xe000)}-${String.fromCharCode(0xf8ff)}]`, "g");
 
-function decode(t: string): string {
-  let text: string;
+/** Layout constants are in units of 16 PDF points (1/4.5 inch). */
+const UNIT = 16;
+
+export async function extractPdfText(buffer: Buffer): Promise<string> {
+  const task = getDocument({ data: new Uint8Array(buffer) });
   try {
-    text = decodeURIComponent(t);
-  } catch {
-    text = t;
+    const doc = await task.promise;
+    const pages: string[] = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      const [, , width, height] = page.view;
+      const content = await page.getTextContent();
+      const runs: TextRun[] = [];
+      for (const item of content.items) {
+        if (!("str" in item) || item.str.trim() === "") continue;
+        runs.push({
+          x: item.transform[4] / UNIT,
+          y: (height - item.transform[5]) / UNIT,
+          width: item.width / UNIT,
+          text: item.str.replace(PRIVATE_USE, "•"),
+        });
+      }
+      pages.push(layoutPage(runs, width / UNIT));
+    }
+    return pages.join("\n\n");
+  } finally {
+    await task.destroy();
   }
-  return text.replace(PRIVATE_USE, "•");
-}
-
-/** pdf2json reports run widths in roughly 1/16 page units. */
-const WIDTH_SCALE = 1 / 16;
-
-export function extractPdfText(buffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const parser = new PDFParser();
-    parser.on("pdfParser_dataError", (err: { parserError: Error } | Error) =>
-      reject(err instanceof Error ? err : err.parserError)
-    );
-    parser.on("pdfParser_dataReady", (data: { Pages: { Width: number; Texts: Pdf2JsonText[] }[] }) => {
-      const pages = data.Pages.map((page) =>
-        layoutPage(
-          page.Texts.map((t) => ({
-            x: t.x,
-            y: t.y,
-            width: (t.w ?? 0) * WIDTH_SCALE,
-            text: decode(t.R.map((r) => r.T).join("")),
-          })).filter((r) => r.text.trim() !== ""),
-          page.Width
-        )
-      );
-      resolve(pages.join("\n\n"));
-    });
-    parser.parseBuffer(buffer);
-  });
 }
