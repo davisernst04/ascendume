@@ -1,10 +1,16 @@
 import { betterAuth } from "better-auth";
+import { getSessionFromCtx } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb } from "./db";
 import { socialProvidersConfig } from "./auth-providers";
 import { eq } from "drizzle-orm";
 import { resumes } from "./db/schema";
 import { deleteUploadedFiles } from "./blob-files";
+
+// Google and GitHub only return verified emails, so signing in with one links
+// to an existing account with the same email. Microsoft is left out:
+// work/school tenants can return an email the user doesn't own.
+const TRUSTED_PROVIDERS = ["google", "github"];
 
 function createAuth() {
   return betterAuth({
@@ -21,10 +27,33 @@ function createAuth() {
     account: {
       accountLinking: {
         enabled: true,
-        // Google and GitHub only return verified emails, so signing in with one
-        // links to an existing account with the same email. Microsoft is left out:
-        // work/school tenants can return an email the user doesn't own.
-        trustedProviders: ["google", "github"],
+        trustedProviders: TRUSTED_PROVIDERS,
+        // Email sign-ups are never verified, so better-auth's default would refuse
+        // to link them. The account.create hook below makes linking safe instead.
+        requireLocalEmailVerified: false,
+      },
+    },
+    databaseHooks: {
+      account: {
+        create: {
+          // Anyone can sign up with an email they don't own. When the real owner
+          // then signs in with Google/GitHub, the account links to theirs, so the
+          // squatter's password and sessions must stop working. Skipped when the
+          // owner is signed in and links from the Account page: that proves both.
+          before: async (account, ctx) => {
+            if (!ctx || !TRUSTED_PROVIDERS.includes(account.providerId)) return;
+            const internal = ctx.context.internalAdapter;
+            const user = await internal.findUserById(account.userId);
+            if (!user || user.emailVerified) return;
+            const session = await getSessionFromCtx(ctx).catch(() => null);
+            if (session?.user.id === account.userId) return;
+            const accounts = await internal.findAccounts(account.userId);
+            for (const a of accounts) {
+              if (a.providerId === "credential") await internal.deleteAccount(a.id);
+            }
+            await internal.deleteUserSessions(account.userId);
+          },
+        },
       },
     },
     session: {
