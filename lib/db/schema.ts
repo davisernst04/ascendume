@@ -1,5 +1,6 @@
 import { pgTable, serial, text, timestamp, varchar, boolean, index, integer, date, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import type { BodySection } from "@/lib/section-order";
 
 // Better Auth Users Table
 export const user = pgTable("user", {
@@ -72,6 +73,8 @@ export const resumes = pgTable("resumes", {
   title: varchar("title", { length: 255 }).notNull().default("My Resume"),
   originalFileUrl: text("original_file_url"),
   isDefault: boolean("is_default").notNull().default(false),
+  // Body sections in page order; null means the default (lib/section-order.ts).
+  sectionOrder: jsonb("section_order").$type<BodySection[]>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({

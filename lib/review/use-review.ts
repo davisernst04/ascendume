@@ -35,8 +35,8 @@ export type ReviewStatus = "idle" | "waiting-for-preview" | "running" | "done";
 
 /** The parts of a resume a review looks at (not its title or id). */
 function snapshotOf(data: ResumeData): string {
-  const { personalInfo, experience, education, skills, projects, certifications } = data;
-  return JSON.stringify({ personalInfo, experience, education, skills, projects, certifications });
+  const { personalInfo, experience, education, skills, projects, certifications, sectionOrder } = data;
+  return JSON.stringify({ personalInfo, experience, education, skills, projects, certifications, sectionOrder });
 }
 
 interface UseReviewOptions {

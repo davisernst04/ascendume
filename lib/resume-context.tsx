@@ -6,6 +6,7 @@ import {
   defaultSkillCategories,
   newSkillCategory,
 } from "@/lib/skill-categories";
+import { type BodySection, DEFAULT_SECTION_ORDER } from "@/lib/section-order";
 
 export type { SkillCategory };
 
@@ -65,6 +66,8 @@ export interface ResumeData {
   skills: SkillCategory[];
   projects: Project[];
   certifications: Certification[];
+  /** Body sections in page order (Contact is always first). */
+  sectionOrder: BodySection[];
 }
 
 const createDefaultResumeData = (): ResumeData => ({
@@ -84,12 +87,14 @@ const createDefaultResumeData = (): ResumeData => ({
   skills: defaultSkillCategories(),
   projects: [],
   certifications: [],
+  sectionOrder: [...DEFAULT_SECTION_ORDER],
 });
 
 interface ResumeContextType {
   resumeData: ResumeData;
   setResumeData: (data: ResumeData) => void;
   updateTitle: (title: string) => void;
+  setSectionOrder: (order: BodySection[]) => void;
   updatePersonalInfo: (info: Partial<PersonalInfo>) => void;
   addExperience: (exp?: Partial<Experience>) => void;
   updateExperience: (id: string, exp: Partial<Experience>) => void;
@@ -115,6 +120,10 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
 
   const updateTitle = (title: string) => {
     setResumeData((prev) => ({ ...prev, title }));
+  };
+
+  const setSectionOrder = (sectionOrder: BodySection[]) => {
+    setResumeData((prev) => ({ ...prev, sectionOrder }));
   };
 
   const updatePersonalInfo = (info: Partial<PersonalInfo>) => {
@@ -275,6 +284,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
         resumeData,
         setResumeData,
         updateTitle,
+        setSectionOrder,
         updatePersonalInfo,
         addExperience,
         updateExperience,

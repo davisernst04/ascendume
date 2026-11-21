@@ -1,4 +1,5 @@
 import type { ResumeSection } from "@/lib/review/bullets";
+import type { BodySection } from "@/lib/section-order";
 import { CATEGORIES, CRITERIA, type Category, type CriterionId, getCriterion } from "@/lib/review/rubric";
 
 /** No overall score below this many bullets: a nearly empty resume would otherwise score high. */
@@ -16,6 +17,8 @@ export interface Finding {
   target: FindingTarget;
   /** The specific problem in this case, e.g. `Starts with "Responsible".` */
   detail: string;
+  /** A one-click fix for section order: put `section` directly above `above`. */
+  reorder?: { section: BodySection; above: BodySection };
 }
 
 export interface CategoryScore {

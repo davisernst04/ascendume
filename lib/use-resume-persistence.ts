@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "./auth-client";
 import { useResume, ResumeData, Experience, Education, Project, Certification } from "./resume-context";
 import { normalizeSkillCategories } from "./skill-categories";
+import { normalizeSectionOrder } from "./section-order";
 import { clearDraft, readDraft, writeDraft } from "./resume-draft";
 
 const DEBOUNCE_MS = 1000;
@@ -72,12 +73,13 @@ interface DbResume {
   skillCategories?: DbSkillCategory[];
   projects?: DbProject[];
   certifications?: DbCertification[];
+  sectionOrder?: unknown;
 }
 
 /** The saved content of a resume (not its id), to tell whether anything changed. */
 function savedFingerprint(data: ResumeData): string {
-  const { title, personalInfo, experience, education, skills, projects, certifications } = data;
-  return JSON.stringify({ title, personalInfo, experience, education, skills, projects, certifications });
+  const { title, personalInfo, experience, education, skills, projects, certifications, sectionOrder } = data;
+  return JSON.stringify({ title, personalInfo, experience, education, skills, projects, certifications, sectionOrder });
 }
 
 export function useResumePersistence(resumeId?: string) {
@@ -164,6 +166,7 @@ export function useResumePersistence(resumeId?: string) {
                 date: cert.date || "",
                 credentialUrl: cert.credentialUrl || "",
               })),
+              sectionOrder: normalizeSectionOrder(resume.sectionOrder),
             };
             setResumeData(loaded);
             lastSavedRef.current = savedFingerprint(loaded);
@@ -200,6 +203,7 @@ export function useResumePersistence(resumeId?: string) {
                 skillsData: data.skills,
                 projectsData: data.projects,
                 certificationsData: data.certifications,
+                sectionOrderData: data.sectionOrder,
               }),
             });
             if (!response.ok) throw new Error(`Save failed (${response.status})`);
@@ -217,6 +221,7 @@ export function useResumePersistence(resumeId?: string) {
                 skillsData: data.skills,
                 projectsData: data.projects,
                 certificationsData: data.certifications,
+                sectionOrderData: data.sectionOrder,
               }),
             });
             if (!response.ok) throw new Error(`Save failed (${response.status})`);

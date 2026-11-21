@@ -9,6 +9,7 @@ import type { Finding } from "@/lib/review/findings";
 import { getCriterion } from "@/lib/review/rubric";
 import { NumberPrompt } from "@/components/ai/number-prompt";
 import type { ReviewResult, ReviewStatus } from "@/lib/review/use-review";
+import type { BodySection } from "@/lib/section-order";
 
 interface ReviewPanelProps {
   status: ReviewStatus;
@@ -18,6 +19,7 @@ interface ReviewPanelProps {
   signedIn: boolean;
   onRun: () => void;
   onGoTo: (section: ResumeSection) => void;
+  onReorder: (section: BodySection, above: BodySection) => void;
 }
 
 const SECTION_NAMES: Record<ResumeSection, string> = {
@@ -29,7 +31,7 @@ const SECTION_NAMES: Record<ResumeSection, string> = {
   certifications: "Certifications",
 };
 
-export function ReviewPanel({ status, result, error, outdated, signedIn, onRun, onGoTo }: ReviewPanelProps) {
+export function ReviewPanel({ status, result, error, outdated, signedIn, onRun, onGoTo, onReorder }: ReviewPanelProps) {
   const busy = status === "waiting-for-preview" || status === "running";
 
   if (busy) {
@@ -149,7 +151,7 @@ export function ReviewPanel({ status, result, error, outdated, signedIn, onRun, 
             <ol className="flex flex-col gap-3">
               {c.findings.map((f, i) => (
                 <li key={i}>
-                  <Note finding={f} result={result} signedIn={signedIn} onGoTo={onGoTo} />
+                  <Note finding={f} result={result} signedIn={signedIn} onGoTo={onGoTo} onReorder={onReorder} />
                 </li>
               ))}
             </ol>
@@ -173,12 +175,15 @@ function Note({
   result,
   signedIn,
   onGoTo,
+  onReorder,
 }: {
   finding: Finding;
   result: ReviewResult;
   signedIn: boolean;
   onGoTo: (section: ResumeSection) => void;
+  onReorder: (section: BodySection, above: BodySection) => void;
 }) {
+  const reorder = finding.reorder;
   const criterion = getCriterion(finding.criterionId);
   const t = finding.target;
   const bullet = t.kind === "bullet" ? result.bullets.get(t.bulletId) : undefined;
@@ -199,6 +204,11 @@ function Note({
         <div className="mt-3">
           <NumberPrompt bullet={bullet} signedIn={signedIn} />
         </div>
+      )}
+      {reorder && (
+        <Button size="sm" variant="outline" className="mt-3" onClick={() => onReorder(reorder.section, reorder.above)}>
+          Move {SECTION_NAMES[reorder.section]} above {SECTION_NAMES[reorder.above]}
+        </Button>
       )}
       {(where || section) && (
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
