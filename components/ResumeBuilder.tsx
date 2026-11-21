@@ -5,7 +5,7 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, us
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { AlertCircle, Check, ChevronDown, Download, Loader2, PenLine } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, ChevronDown, Download, Loader2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -71,9 +71,10 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
     setView(tab);
   }, []);
 
+  // Notes for the resume as it stands are shown again; a new review runs only after edits.
   const startReview = useCallback(() => {
     showDesk("review");
-    review.request();
+    if (!review.result || review.outdated) review.request();
   }, [review, showDesk]);
 
   const goToSection = useCallback(
@@ -136,10 +137,13 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   const section = SECTIONS.find((s) => s.type === active) ?? SECTIONS[0];
 
   // The desk measures itself so the whole page fits in it without scrolling.
+  // Room is kept for the pager and the page-count warning only when the resume runs past one page.
   const deskRef = useRef<HTMLDivElement>(null);
   const desk = useElementSize(deskRef);
+  const pages = compiled?.pages ?? null;
+  const deskChrome = DESK_PADDING + (pages && pages > 1 ? PAGER_HEIGHT + WARNING_HEIGHT : 0);
   const pageWidth = Math.floor(
-    Math.max(240, Math.min(760, desk.width - 48, (desk.height - 40 - PAGER_HEIGHT) / PAGE_RATIO))
+    Math.max(240, Math.min(900, desk.width - DESK_PADDING, (desk.height - deskChrome) / PAGE_RATIO))
   );
 
   // On wider screens the title and actions live in the app header, freeing a row for the form and page.
@@ -308,22 +312,10 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
             view === "edit" ? "hidden lg:flex" : "flex flex-1 lg:flex-none"
           )}
         >
-          <div className="flex h-11 shrink-0 items-center gap-1 border-b border-rule px-4" role="tablist" aria-label="Desk">
-            <span className="hidden items-center gap-1 lg:flex">
-              <DeskTabButton active={deskTab === "page"} onClick={() => showDesk("page")}>
-                Page
-              </DeskTabButton>
-              <DeskTabButton active={deskTab === "review"} onClick={() => showDesk("review")}>
-                Review notes
-                {findingCount > 0 && <CountBadge n={findingCount} muted={review.outdated} />}
-              </DeskTabButton>
-            </span>
-            <PageCount pages={compiled?.pages ?? null} className="lg:ml-auto" />
-          </div>
-
           <div ref={deskRef} className="relative min-h-0 flex-1">
             {/* The preview stays mounted while the review is shown: the review needs its page count. */}
-            <div className={cn("flex h-full flex-col items-center justify-center p-5", deskTab !== "page" && "hidden")}>
+            <div className={cn("flex h-full flex-col items-center justify-center gap-2 p-3", deskTab !== "page" && "hidden")}>
+              <PageWarning pages={pages} />
               <LatexPdfPreview
                 data={resumeData}
                 onPdfReady={(blob) => {
@@ -337,6 +329,11 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
             {deskTab === "review" && (
               <div className="absolute inset-0 overflow-y-auto">
                 <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
+                  {/* Phones switch views with the tabs above; wide screens get a way back here. */}
+                  <Button variant="ghost" size="sm" onClick={() => showDesk("page")} className="-ml-3 mb-3 hidden lg:inline-flex">
+                    <ArrowLeft aria-hidden />
+                    Back to page
+                  </Button>
                   <ReviewPanel
                     status={review.status}
                     result={review.result}
@@ -356,28 +353,13 @@ function ResumeBuilderContent({ resumeId }: { resumeId?: string }) {
   );
 }
 
-/** Letter paper, and the pager row the preview adds under a multi-page resume. */
+/** Letter paper, the desk's padding (both sides), and the pager and warning rows of a multi-page resume. */
 const PAGE_RATIO = 11 / 8.5;
+const DESK_PADDING = 24;
 const PAGER_HEIGHT = 44;
+const WARNING_HEIGHT = 28;
 
 const noopSubscribe = () => () => {};
-
-function DeskTabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors",
-        active ? "bg-surface text-ink" : "text-ink-soft hover:text-ink"
-      )}
-    >
-      {children}
-    </button>
-  );
-}
 
 function CountBadge({ n, muted }: { n: number; muted: boolean }) {
   return (
@@ -392,12 +374,11 @@ function CountBadge({ n, muted }: { n: number; muted: boolean }) {
   );
 }
 
-/** How many pages the typeset resume runs to, flagged past one. */
-function PageCount({ pages, className }: { pages: number | null; className?: string }) {
-  if (!pages) return null;
-  if (pages === 1) return <p className={cn("text-sm text-ink-soft", className)}>Fits on one page</p>;
+/** Flags a resume that runs past one page. */
+function PageWarning({ pages }: { pages: number | null }) {
+  if (!pages || pages === 1) return null;
   return (
-    <p className={cn("text-sm font-semibold text-danger", className)}>
+    <p className="text-sm font-semibold text-danger">
       Runs to {pages} pages. Aim for one.
     </p>
   );

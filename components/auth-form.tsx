@@ -118,19 +118,22 @@ export function AuthForm({ mode, providers, next, oauthError }: AuthFormProps) {
   return (
     <div className="grid h-dvh bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       {/* A quiet panel beside the form on wide screens */}
-      <aside className="hidden flex-col justify-between bg-brand p-10 text-[#efeee6] lg:flex dark:bg-[#22352a]">
-        <Wordmark className="text-[#efeee6]" />
-        <div className="max-w-md">
-          <p className="font-display text-[2.25rem] font-bold leading-tight">
-            {isSignUp ? "Your resumes, saved. The AI review, unlocked." : "Pick up where you left off."}
-          </p>
-          <p className="mt-4 text-[#efeee6]/75">
-            Every finding points at the bullet it&apos;s about, and the AI never adds a number you didn&apos;t give.
-          </p>
+      <aside className="hidden bg-brand p-10 text-[#efeee6] lg:flex dark:bg-[#22352a]">
+        {/* A centered column, so the copy doesn't hug the window edge on wide screens. */}
+        <div className="mx-auto flex w-full max-w-lg flex-col items-start justify-between">
+          <Wordmark className="text-[#efeee6]" />
+          <div className="max-w-md">
+            <p className="font-display text-[2.25rem] font-bold leading-tight">
+              {isSignUp ? "Your resumes, saved. The AI review, unlocked." : "Pick up where you left off."}
+            </p>
+            <p className="mt-4 text-[#efeee6]/75">
+              Every finding points at the bullet it&apos;s about, and the AI never adds a number you didn&apos;t give.
+            </p>
+          </div>
+          <Link href="/privacy" className="text-sm text-[#efeee6]/70 hover:text-[#efeee6] hover:underline">
+            What we store, and where your resume text goes
+          </Link>
         </div>
-        <Link href="/privacy" className="text-sm text-[#efeee6]/70 hover:text-[#efeee6] hover:underline">
-          What we store, and where your resume text goes
-        </Link>
       </aside>
 
       <main className="flex min-h-0 flex-col overflow-y-auto px-4 sm:px-8">

@@ -160,6 +160,22 @@
   html {
     -webkit-text-size-adjust: 100%;
   }
+  /* Tailwind v4 leaves buttons on the default arrow; anything clickable gets the hand. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"]:not([data-disabled]),
+  [role="menuitemradio"]:not([data-disabled]),
+  [role="menuitemcheckbox"]:not([data-disabled]),
+  [role="option"]:not([data-disabled]),
+  summary,
+  select,
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  ::file-selector-button {
+    cursor: pointer;
+  }
   body {
     @apply bg-background text-foreground font-sans;
     font-size: 1.0625rem;

@@ -207,9 +207,6 @@ export function LatexPdfPreview({ data, onPdfReady, onCompiled, width = 388 }: P
   );
 }
 
-/** Height the preview needs beyond the page itself: the pager row under a multi-page resume. */
-export const PREVIEW_CHROME_HEIGHT = 44;
-
 /**
  * One compiled PDF, showing a single page. A hidden layer sits on top of the
  * shown one, invisible, until its page has rendered.
