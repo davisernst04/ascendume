@@ -54,7 +54,7 @@ interface AuthFormProps {
 export function oauthErrorMessage(code: string | undefined): string | null {
   if (!code) return null;
   if (code === "account_not_linked") {
-    return "An account with this email already exists. Sign in with your email and password, then connect GitHub or Google from your Account page.";
+    return "An account with this email already exists. Sign in with your email and password, then connect this sign-in method from your Account page.";
   }
   if (code === "access_denied") return "Sign-in was cancelled.";
   return "That sign-in didn't work. Try again, or use your email and password.";
